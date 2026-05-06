@@ -1103,7 +1103,6 @@ export default function AdminDashboard() {
               <nav className="hidden md:flex gap-8 items-center">
                 <Link to="/" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Home</Link>
                 <Link to="/courses" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Courses</Link>
-                <Link to="/contact" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Contact</Link>
               </nav>
               <div className="flex items-center gap-4">
                 <span className="font-['DM_Sans',sans-serif] text-gray-600">

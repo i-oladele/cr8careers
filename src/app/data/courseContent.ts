@@ -458,6 +458,526 @@ Boolean search is a powerful technique for finding qualified candidates quickly 
       ],
       passingScore: 75
     }
+  },
+  {
+    id: 'time-management-fundamentals',
+    title: 'Time Management Fundamentals',
+    description: 'Master essential time management techniques to boost productivity and achieve work-life balance.',
+    duration: '3 weeks',
+    level: 'Beginner',
+    price: 'Free',
+    category: 'Soft Skills',
+    instructor: 'Alex Thompson',
+    modules: [
+      {
+        id: 'tm-mod1',
+        title: 'Understanding Time Management',
+        description: 'Learn the core principles of effective time management',
+        lessons: [
+          {
+            id: 'tm-lesson1',
+            title: 'Introduction to Time Management',
+            content: `# Introduction to Time Management
+
+Time management is the process of planning and exercising conscious control over the amount of time spent on specific activities, especially to increase effectiveness, efficiency, and productivity.
+
+## Key Concepts:
+- Setting clear goals and priorities
+- Breaking down large tasks into smaller, manageable chunks
+- Using tools and techniques to stay organized
+- Eliminating time-wasting activities
+- Creating a balanced schedule
+
+## Benefits:
+- Reduced stress and anxiety
+- Increased productivity
+- Better work-life balance
+- More time for personal activities
+- Improved decision-making skills`,
+            duration: '15 min',
+            type: 'text'
+          },
+          {
+            id: 'tm-lesson2',
+            title: 'Setting SMART Goals',
+            content: `# Setting SMART Goals
+
+SMART goals are Specific, Measurable, Achievable, Relevant, and Time-bound objectives that help you focus your efforts and increase your chances of success.
+
+## SMART Framework:
+- **Specific**: Clearly define what you want to accomplish
+- **Measurable**: Establish criteria to track progress
+- **Achievable**: Set realistic and attainable goals
+- **Relevant**: Ensure goals align with your values and objectives
+- **Time-bound**: Set deadlines for completion
+
+## Examples:
+- Bad: "I want to be better at time management"
+- Good: "I will use the Pomodoro Technique for 25 minutes daily for the next 30 days to improve my focus"`,
+            duration: '20 min',
+            type: 'text'
+          }
+        ]
+      },
+      {
+        id: 'tm-mod2',
+        title: 'Productivity Techniques',
+        description: 'Explore proven methods to enhance your productivity',
+        lessons: [
+          {
+            id: 'tm-lesson3',
+            title: 'The Pomodoro Technique',
+            content: `# The Pomodoro Technique
+
+The Pomodoro Technique is a time management method that uses a timer to break down work into intervals, traditionally 25 minutes in length, separated by short breaks.
+
+## How It Works:
+1. Choose a task to focus on
+2. Set a timer for 25 minutes
+3. Work on the task until the timer rings
+4. Take a 5-minute short break
+5. After four pomodoros, take a longer break (15-30 minutes)
+
+## Benefits:
+- Improves focus and concentration
+- Prevents burnout and mental fatigue
+- Creates a sense of urgency
+- Helps track time spent on tasks`,
+            duration: '25 min',
+            type: 'text'
+          }
+        ]
+      }
+    ],
+    finalAssessment: {
+      questions: [
+        {
+          id: 'tm-q1',
+          question: 'What does the "M" stand for in SMART goals?',
+          options: ['Motivating', 'Measurable', 'Manageable', 'Meaningful'],
+          correctAnswer: 1
+        },
+        {
+          id: 'tm-q2',
+          question: 'How long is a typical Pomodoro work interval?',
+          options: ['15 minutes', '25 minutes', '30 minutes', '45 minutes'],
+          correctAnswer: 1
+        }
+      ],
+      passingScore: 70
+    }
+  },
+  {
+    id: 'digital-literacy-basics',
+    title: 'Digital Literacy Basics',
+    description: 'Essential digital skills for navigating the modern workplace and online environment safely and effectively.',
+    duration: '4 weeks',
+    level: 'Beginner',
+    price: 'Free',
+    category: 'Technical',
+    instructor: 'Maria Garcia',
+    modules: [
+      {
+        id: 'dl-mod1',
+        title: 'Digital Fundamentals',
+        description: 'Learn basic digital concepts and tools',
+        lessons: [
+          {
+            id: 'dl-lesson1',
+            title: 'Introduction to Digital Literacy',
+            content: `# Introduction to Digital Literacy
+
+Digital literacy is the ability to find, evaluate, utilize, share, and create content using digital technologies and the internet.
+
+## Core Components:
+- Basic computer skills
+- Internet navigation and safety
+- Email communication
+- Online research skills
+- Digital etiquette and responsibility
+
+## Why It Matters:
+- Essential for modern workplace success
+- Enables lifelong learning
+- Facilitates global communication
+- Improves access to information and services`,
+            duration: '20 min',
+            type: 'text'
+          },
+          {
+            id: 'dl-lesson2',
+            title: 'Online Safety and Security',
+            content: `# Online Safety and Security
+
+Protecting yourself online is crucial in today's digital world. Learn essential security practices to keep your information safe.
+
+## Security Best Practices:
+- Use strong, unique passwords
+- Enable two-factor authentication
+- Recognize phishing attempts
+- Keep software updated
+- Use secure Wi-Fi connections
+- Backup important data regularly
+
+## Red Flags:
+- Unsolicited emails asking for personal information
+- Links from unknown senders
+- Poor grammar and spelling in official-looking messages
+- Urgent requests for immediate action`,
+            duration: '25 min',
+            type: 'text'
+          }
+        ]
+      }
+    ],
+    finalAssessment: {
+      questions: [
+        {
+          id: 'dl-q1',
+          question: 'What is two-factor authentication?',
+          options: ['Using two passwords', 'A security method requiring two forms of verification', 'Double encryption', 'Using two different email accounts'],
+          correctAnswer: 1
+        },
+        {
+          id: 'dl-q2',
+          question: 'Which is a sign of a phishing attempt?',
+          options: ['Official company logo', 'Grammar errors and urgency', 'Personalized greeting', 'Familiar sender email'],
+          correctAnswer: 1
+        }
+      ],
+      passingScore: 70
+    }
+  },
+  {
+    id: 'communication-skills',
+    title: 'Effective Communication Skills',
+    description: 'Develop powerful communication abilities to enhance personal and professional relationships.',
+    duration: '2 weeks',
+    level: 'Beginner',
+    price: 'Free',
+    category: 'Soft Skills',
+    instructor: 'James Wilson',
+    modules: [
+      {
+        id: 'cs-mod1',
+        title: 'Communication Foundations',
+        description: 'Master the basics of effective communication',
+        lessons: [
+          {
+            id: 'cs-lesson1',
+            title: 'The Art of Listening',
+            content: `# The Art of Listening
+
+Effective listening is a cornerstone of good communication. It's not just about hearing words, but understanding the complete message being sent.
+
+## Active Listening Techniques:
+- Maintain eye contact
+- Show genuine interest
+- Avoid interrupting
+- Ask clarifying questions
+- Provide feedback and paraphrase
+- Pay attention to non-verbal cues
+
+## Benefits:
+- Builds stronger relationships
+- Reduces misunderstandings
+- Increases trust and respect
+- Improves problem-solving
+- Enhances team collaboration`,
+            duration: '18 min',
+            type: 'text'
+          },
+          {
+            id: 'cs-lesson2',
+            title: 'Non-Verbal Communication',
+            content: `# Non-Verbal Communication
+
+Your body language, facial expressions, and tone of voice often communicate more than your words.
+
+## Key Elements:
+- **Body Language**: Posture, gestures, and movement
+- **Facial Expressions**: Convey emotions and attitudes
+- **Eye Contact**: Shows interest and confidence
+- **Tone of Voice**: Affects message interpretation
+- **Personal Space**: Cultural variations in comfort zones
+
+## Tips:
+- Maintain open, relaxed posture
+- Use appropriate facial expressions
+- Match tone to message content
+- Respect cultural differences
+- Be aware of nervous habits`,
+            duration: '22 min',
+            type: 'text'
+          }
+        ]
+      }
+    ],
+    finalAssessment: {
+      questions: [
+        {
+          id: 'cs-q1',
+          question: 'What is the most important aspect of active listening?',
+          options: ['Speaking clearly', 'Understanding the complete message', 'Taking notes', 'Responding quickly'],
+          correctAnswer: 1
+        },
+        {
+          id: 'cs-q2',
+          question: 'Which of these is NOT a form of non-verbal communication?',
+          options: ['Body language', 'Tone of voice', 'Written words', 'Facial expressions'],
+          correctAnswer: 2
+        }
+      ],
+      passingScore: 70
+    }
+  },
+  {
+    id: 'resume-writing-workshop',
+    title: 'Resume Writing Workshop',
+    description: 'Create a compelling resume that stands out to recruiters and lands you interviews.',
+    duration: '1 week',
+    level: 'Beginner',
+    price: 'Free',
+    category: 'Career',
+    instructor: 'Patricia Chen',
+    modules: [
+      {
+        id: 'rw-mod1',
+        title: 'Resume Essentials',
+        description: 'Learn the fundamentals of effective resume writing',
+        lessons: [
+          {
+            id: 'rw-lesson1',
+            title: 'Resume Structure and Format',
+            content: `# Resume Structure and Format
+
+A well-structured resume is crucial for making a strong first impression on potential employers.
+
+## Essential Sections:
+1. **Contact Information**: Name, phone, email, LinkedIn
+2. **Professional Summary**: 2-3 sentence overview
+3. **Work Experience**: Reverse chronological order
+4. **Education**: Degrees, certifications, relevant coursework
+5. **Skills**: Technical and soft skills
+6. **Optional**: Projects, volunteer work, awards
+
+## Formatting Best Practices:
+- Keep it to 1-2 pages maximum
+- Use clean, professional fonts (Arial, Calibri, Times New Roman)
+- Maintain consistent formatting
+- Use bullet points for readability
+- Include white space to avoid clutter
+- Save as PDF unless specified otherwise`,
+            duration: '15 min',
+            type: 'text'
+          },
+          {
+            id: 'rw-lesson2',
+            title: 'Writing Achievement Statements',
+            content: `# Writing Achievement Statements
+
+Transform your job descriptions into powerful achievement statements that showcase your value.
+
+## STAR Method:
+- **Situation**: Context or challenge
+- **Task**: Your responsibility
+- **Action**: Steps you took
+- **Result**: Quantifiable outcome
+
+## Examples:
+- Weak: "Responsible for managing social media accounts"
+- Strong: "Increased social media engagement by 45% over 6 months by implementing a content calendar and engaging with followers daily"
+
+- Weak: "Helped with customer service"
+- Strong: "Resolved 95% of customer inquiries on first contact, reducing response time by 30%"
+
+## Action Verbs:
+- Managed, Led, Developed, Created, Implemented
+- Increased, Reduced, Improved, Streamlined, Optimized
+- Collaborated, Coordinated, Mentored, Trained, Supervised`,
+            duration: '20 min',
+            type: 'text'
+          }
+        ]
+      }
+    ],
+    finalAssessment: {
+      questions: [
+        {
+          id: 'rw-q1',
+          question: 'What does the "R" stand for in the STAR method?',
+          options: ['Responsibility', 'Reference', 'Result', 'Role'],
+          correctAnswer: 2
+        },
+        {
+          id: 'rw-q2',
+          question: 'What is the maximum recommended length for a resume?',
+          options: ['1 page', '2 pages', '3 pages', 'No limit'],
+          correctAnswer: 1
+        }
+      ],
+      passingScore: 70
+    }
+  },
+  {
+    id: 'hospitality-fundamentals',
+    title: 'Hospitality Fundamentals',
+    description: 'Master the essential skills and principles for exceptional service in the hospitality industry.',
+    duration: '4 weeks',
+    level: 'Beginner',
+    price: 'Free',
+    category: 'Core Hospitality',
+    instructor: 'Michael Roberts',
+    modules: [
+      {
+        id: 'hf-mod1',
+        title: 'Introduction to Hospitality',
+        description: 'Learn the foundations of hospitality service excellence',
+        lessons: [
+          {
+            id: 'hf-lesson1',
+            title: 'Understanding Hospitality Industry',
+            content: `# Understanding Hospitality Industry
+
+The hospitality industry encompasses businesses that provide services to guests, including hotels, restaurants, tourism, and entertainment.
+
+## Key Sectors:
+- **Accommodation**: Hotels, resorts, motels, vacation rentals
+- **Food & Beverage**: Restaurants, bars, catering, room service
+- **Travel & Tourism**: Airlines, tour operators, travel agencies
+- **Recreation**: Theme parks, casinos, sports facilities
+
+## Core Principles:
+- Customer service excellence
+- Attention to detail
+- Cultural awareness
+- Problem-solving skills
+- Team collaboration
+
+## Industry Trends:
+- Technology integration
+- Sustainability focus
+- Personalized experiences
+- Health and safety protocols`,
+            duration: '25 min',
+            type: 'text'
+          },
+          {
+            id: 'hf-lesson2',
+            title: 'Service Excellence Standards',
+            content: `# Service Excellence Standards
+
+Delivering exceptional service is the cornerstone of hospitality success. Learn the standards that set leading establishments apart.
+
+## Service Standards:
+- **Greeting**: Warm, professional welcome within 30 seconds
+- **Communication**: Clear, respectful, and attentive listening
+- **Efficiency**: Prompt service without rushing guests
+- **Problem Resolution**: Address issues quickly and professionally
+- **Personalization**: Remember guest preferences and special requests
+
+## Key Skills:
+- Active listening
+- Non-verbal communication
+- Cultural sensitivity
+- Time management
+- Conflict resolution
+
+## Measuring Excellence:
+- Guest satisfaction scores
+- Repeat business rates
+- Online reviews and ratings
+- Employee performance metrics`,
+            duration: '30 min',
+            type: 'text'
+          }
+        ]
+      }
+    ],
+    finalAssessment: {
+      questions: [
+        {
+          id: 'hf-q1',
+          question: 'What is the recommended maximum time to greet a guest?',
+          options: ['15 seconds', '30 seconds', '1 minute', '2 minutes'],
+          correctAnswer: 1
+        },
+        {
+          id: 'hf-q2',
+          question: 'Which is NOT a key sector of hospitality?',
+          options: ['Accommodation', 'Manufacturing', 'Food & Beverage', 'Travel & Tourism'],
+          correctAnswer: 1
+        }
+      ],
+      passingScore: 70
+    }
+  },
+  {
+    id: 'front-office-management',
+    title: 'Front Office Management',
+    description: 'Develop expertise in managing hotel front office operations, guest relations, and administrative excellence.',
+    duration: '6 weeks',
+    level: 'Intermediate',
+    price: '₦85,000',
+    category: 'Core Hospitality',
+    instructor: 'Sarah Mitchell',
+    modules: [
+      {
+        id: 'fo-mod1',
+        title: 'Front Office Operations',
+        description: 'Master the core functions of hotel front office management',
+        lessons: [
+          {
+            id: 'fo-lesson1',
+            title: 'Check-in and Check-out Procedures',
+            content: `# Check-in and Check-out Procedures
+
+Efficient check-in and check-out processes are critical for guest satisfaction and hotel operations.
+
+## Check-in Process:
+1. **Greeting**: Welcome guests warmly
+2. **Verification**: Confirm reservation and identity
+3. **Registration**: Complete necessary paperwork
+4. **Payment**: Secure payment method
+5. **Room Assignment**: Provide room keys and information
+6. **Orientation**: Explain hotel facilities and services
+
+## Check-out Process:
+1. **Billing Review**: Present final bill
+2. **Payment Settlement**: Process final payment
+3. **Feedback**: Request guest feedback
+4. **Luggage Assistance**: Help with luggage if needed
+5. **Farewell**: Warm goodbye and invitation to return
+
+## Best Practices:
+- Use guest name consistently
+- Offer upselling opportunities
+- Handle special requests efficiently
+- Maintain accuracy in all transactions
+- Ensure privacy and security`,
+            duration: '35 min',
+            type: 'text'
+          }
+        ]
+      }
+    ],
+    finalAssessment: {
+      questions: [
+        {
+          id: 'fo-q1',
+          question: 'What is the first step in the check-in process?',
+          options: ['Payment', 'Greeting', 'Room Assignment', 'Registration'],
+          correctAnswer: 1
+        },
+        {
+          id: 'fo-q2',
+          question: 'Why is guest feedback important during check-out?',
+          options: ['Marketing research', 'Service improvement', 'Legal requirement', 'Company policy'],
+          correctAnswer: 1
+        }
+      ],
+      passingScore: 75
+    }
   }
 ];
 

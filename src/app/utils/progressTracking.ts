@@ -67,8 +67,11 @@ class ProgressTracker {
 
   // Enroll user in a course
   enrollInCourse(courseId: string, course: Course): void {
-    const profile = this.getUserProfile();
-    if (!profile) return;
+    let profile = this.getUserProfile();
+    if (!profile) {
+      // Create a default profile if none exists
+      profile = this.initializeUserProfile('John Doe', 'john@example.com');
+    }
 
     if (!profile.enrolledCourses.includes(courseId)) {
       profile.enrolledCourses.push(courseId);

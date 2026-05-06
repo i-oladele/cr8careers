@@ -187,37 +187,41 @@ export default function CoursePlayerPage() {
   const [userName] = useState('John Doe'); // This would come from user auth
 
   useEffect(() => {
-    if (!courseId) {
-      navigate('/courses');
-      return;
-    }
-
-    const foundCourse = coursesData.find(c => c.id === courseId);
-    if (foundCourse) {
-      setCourse(foundCourse);
-      
-      // Initialize or load progress
-      if (!progressTracker.isEnrolled(courseId)) {
-        progressTracker.enrollInCourse(courseId, foundCourse);
-      }
-      
-      const progress = progressTracker.getCourseProgress(courseId);
-      if (progress) {
-        setCompletedLessons(new Set(progress.completedLessons));
+    if (courseId) {
+      const course = coursesData.find(c => c.id === courseId);
+      if (course) {
+        setCourse(course);
         
-        // Find current lesson and module indices
-        const moduleIndex = foundCourse.modules.findIndex(mod => mod.id === progress.currentModule);
-        const lessonIndex = moduleIndex >= 0 ? foundCourse.modules[moduleIndex].lessons.findIndex(lesson => lesson.id === progress.currentLesson) : 0;
-        
-        if (moduleIndex >= 0 && lessonIndex >= 0) {
-          setCurrentModule(moduleIndex);
-          setCurrentLesson(lessonIndex);
+        // Check if user is enrolled
+        if (!progressTracker.isEnrolled(courseId)) {
+          progressTracker.enrollInCourse(courseId, course);
         }
         
-        // Show certificate if course is completed
-        if (progress.completed && !progress.certificateIssued) {
-          setShowCertificate(true);
+        // Load progress
+        const progress = progressTracker.getCourseProgress(courseId);
+        if (progress) {
+          setCompletedLessons(new Set(progress.completedLessons));
+          
+          // Set current lesson to last accessed or first lesson
+          if (progress.currentLesson) {
+            const foundModule = course.modules.find(module => 
+              module.lessons.some(lesson => lesson.id === progress.currentLesson)
+            );
+            if (foundModule) {
+              const moduleIndex = course.modules.indexOf(foundModule);
+              const lessonIndex = foundModule.lessons.findIndex(lesson => lesson.id === progress.currentLesson);
+              setCurrentModule(moduleIndex);
+              setCurrentLesson(lessonIndex);
+            }
+          }
+          
+          // Show certificate if course is completed
+          if (progress.completed) {
+            setShowCertificate(true);
+          }
         }
+      } else {
+        navigate('/courses');
       }
     } else {
       navigate('/courses');
@@ -254,6 +258,35 @@ export default function CoursePlayerPage() {
   const currentModuleData = course.modules[currentModule];
   const currentLessonData = currentModuleData.lessons[currentLesson];
   const progress = (completedLessons.size / course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0)) * 100;
+
+  // Helper function to check if a lesson is unlocked
+  const isLessonUnlocked = (moduleIndex: number, lessonIndex: number): boolean => {
+    const lessonId = course.modules[moduleIndex].lessons[lessonIndex].id;
+    
+    // A lesson is unlocked if:
+    // 1. It's the first lesson
+    // 2. It's already been completed (always accessible for review)
+    // 3. The previous lesson is completed
+    
+    if (moduleIndex === 0 && lessonIndex === 0) return true;
+    if (completedLessons.has(lessonId)) return true;
+    
+    // Find the previous lesson
+    let prevModule = moduleIndex;
+    let prevLesson = lessonIndex - 1;
+    
+    if (prevLesson < 0) {
+      // Moving to previous module's last lesson
+      prevModule = moduleIndex - 1;
+      if (prevModule < 0) return true;
+      prevLesson = course.modules[prevModule].lessons.length - 1;
+    }
+    
+    const prevLessonId = course.modules[prevModule].lessons[prevLesson].id;
+    
+    // Lesson is unlocked if previous lesson is completed
+    return completedLessons.has(prevLessonId);
+  };
 
   const handleNextLesson = () => {
     markLessonComplete(currentLessonData.id);
@@ -314,7 +347,7 @@ export default function CoursePlayerPage() {
         <div className="w-80 bg-white h-screen overflow-y-auto border-r border-gray-200">
           <div className="p-6">
             <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl mb-4">{course.title}</h2>
-            <div className="mb-6">
+            <div className="mb-2">
               <div className="flex justify-between text-sm mb-2">
                 <span className="font-['DM_Sans',sans-serif]">Progress</span>
                 <span className="font-['DM_Sans',sans-serif] font-bold">{Math.round(progress)}%</span>
@@ -325,6 +358,13 @@ export default function CoursePlayerPage() {
                   style={{ width: `${progress}%` }}
                 />
               </div>
+            </div>
+            
+            <div className="flex items-center gap-2 mb-6 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-['DM_Sans',sans-serif]">Complete lessons to unlock the next one</span>
             </div>
             
             <div className="space-y-4">
@@ -342,31 +382,42 @@ export default function CoursePlayerPage() {
                     {module.lessons.map((lesson, lessonIndex) => {
                       const isCurrent = moduleIndex === currentModule && lessonIndex === currentLesson;
                       const isCompleted = completedLessons.has(lesson.id);
+                      const lessonUnlocked = isLessonUnlocked(moduleIndex, lessonIndex);
+                      const isLocked = !isCompleted && !isCurrent && !lessonUnlocked;
                       
                       return (
                         <button
                           key={lesson.id}
                           onClick={() => {
-                            setCurrentModule(moduleIndex);
-                            setCurrentLesson(lessonIndex);
-                            if (courseId) {
-                              progressTracker.updateCurrentLesson(courseId, lesson.id, module.id);
+                            // Allow navigation if: current lesson, completed lesson, or unlocked lesson
+                            if (isCurrent || isCompleted || lessonUnlocked) {
+                              setCurrentModule(moduleIndex);
+                              setCurrentLesson(lessonIndex);
+                              if (courseId) {
+                                progressTracker.updateCurrentLesson(courseId, lesson.id, module.id);
+                              }
                             }
                           }}
                           className={`w-full text-left p-3 rounded-md mb-1 transition-colors ${
                             isCurrent 
                               ? 'bg-[#0d9488] text-white' 
                               : isCompleted 
-                                ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                                : 'hover:bg-gray-100'
+                                ? 'bg-green-50 text-green-700 hover:bg-green-100 cursor-pointer'
+                                : isLocked
+                                  ? 'bg-gray-50 text-gray-400 cursor-not-allowed pointer-events-none'
+                                  : 'hover:bg-gray-100 cursor-pointer'
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            {isCompleted && (
+                            {isCompleted ? (
                               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
-                            )}
+                            ) : isLocked ? (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            ) : null}
                             <span className="font-['DM_Sans',sans-serif] text-sm">
                               {lesson.title}
                             </span>
@@ -384,6 +435,22 @@ export default function CoursePlayerPage() {
         {/* Main Content */}
         <div className="flex-1 p-8">
           <div className="max-w-4xl mx-auto">
+            {/* Breadcrumbs */}
+            <div className="mb-6">
+              <div className="flex items-center text-sm">
+                <Link to="/courses" className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 2 2m-9 5l7-7 2 2M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  All Courses
+                </Link>
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="font-['DM_Sans',sans-serif] text-gray-700">{course?.title}</span>
+              </div>
+            </div>
+            
             <div className="mb-6">
               <h1 className="font-['DM_Sans',sans-serif] font-bold text-2xl mb-2">
                 {currentLessonData.title}
@@ -436,13 +503,21 @@ export default function CoursePlayerPage() {
                   Previous Lesson
                 </button>
                 
+                {!completedLessons.has(currentLessonData.id) && (
+                  <div className="text-sm text-gray-500 font-['DM_Sans',sans-serif]">
+                    Complete this lesson to unlock the next one
+                  </div>
+                )}
+                
                 <button
                   onClick={handleNextLesson}
                   className="px-6 py-3 bg-[#0d9488] text-white rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-bold"
                 >
                   {currentModule === course.modules.length - 1 && currentLesson === currentModuleData.lessons.length - 1 
                     ? 'Complete Course' 
-                    : 'Next Lesson'
+                    : completedLessons.has(currentLessonData.id) 
+                      ? 'Continue to Next Lesson'
+                      : 'Mark Complete & Continue'
                   }
                 </button>
               </div>

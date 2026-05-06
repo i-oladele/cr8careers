@@ -42,7 +42,7 @@ function Sidebar({ activeSection, setActiveSection }: {
   setActiveSection: (section: string) => void;
 }) {
   const menuItems = [
-    { id: 'courses', label: 'Courses', icon: '📚' },
+    { id: 'courses', label: 'Courses', icon: '/Books.svg' },
     { id: 'jobs', label: 'Job Openings', icon: '💼' },
   ];
 
@@ -65,7 +65,15 @@ function Sidebar({ activeSection, setActiveSection }: {
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <span className="text-xl">{item.icon}</span>
+            {item.icon.startsWith('/') ? (
+              <img 
+                src={item.icon} 
+                alt={item.label}
+                className={`w-5 h-5 ${activeSection === item.id ? 'filter brightness-0 invert' : ''}`}
+              />
+            ) : (
+              <span className="text-xl">{item.icon}</span>
+            )}
             <span className="font-['DM_Sans',sans-serif] font-medium">{item.label}</span>
           </button>
         ))}

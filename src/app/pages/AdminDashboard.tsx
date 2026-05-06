@@ -1152,12 +1152,22 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowCourseWizard(true)}
+                  onClick={() => setShowCourseWizard(!showCourseWizard)}
                   className="bg-[#ed2a10] text-white px-6 py-3 rounded-lg hover:bg-[#d42610] transition-colors font-['DM_Sans',sans-serif] font-semibold"
                 >
-                  Create New Course
+                  {showCourseWizard ? 'Cancel' : 'Create New Course'}
                 </button>
               </div>
+
+              {/* Inline Course Creation Wizard */}
+              {showCourseWizard && (
+                <div className="mb-6">
+                  <CourseCreationWizard
+                    onClose={() => setShowCourseWizard(false)}
+                    onSave={handleCourseSave}
+                  />
+                </div>
+              )}
 
               {/* Search and Filter Section */}
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -1397,13 +1407,6 @@ export default function AdminDashboard() {
         </main>
       </div>
 
-      {/* Course Creation Wizard */}
-      {showCourseWizard && (
-        <CourseCreationWizard
-          onClose={() => setShowCourseWizard(false)}
-          onSave={handleCourseSave}
-        />
-      )}
-    </div>
+      </div>
   );
 }

@@ -47,16 +47,11 @@ function Sidebar({ activeSection, setActiveSection }: {
   ];
 
   return (
-    <div className="w-64 bg-white h-screen shadow-lg fixed left-0 top-0">
+    <div className="w-64 bg-white shadow-lg fixed left-0 top-20 bottom-0">
       <div className="p-6">
-        <Link to="/" className="flex items-center gap-3">
-          <img 
-            src="/logo.png" 
-            alt="Cr8Careers Logo" 
-            className="h-10 w-auto object-contain"
-          />
-          <span className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900">Cr8Careers</span>
-        </Link>
+        <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-gray-900 mb-4">
+          Admin Menu
+        </h3>
       </div>
       
       <nav className="px-4">
@@ -1097,10 +1092,13 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="ml-64">
         {/* Top Header */}
-        <header className="fixed top-0 left-64 right-0 bg-white z-40 shadow-sm">
-          <div className="max-w-7xl px-6">
+        <header className="fixed top-0 left-0 right-0 bg-white z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-20">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-8">
+                <Link to="/" className="h-16 w-32">
+                  <img alt="CR8Careers Logo" className="h-full w-full object-contain" src="/logo.png" />
+                </Link>
                 <h1 className="font-['DM_Sans',sans-serif] font-bold text-2xl text-gray-900">
                   Admin Dashboard
                 </h1>

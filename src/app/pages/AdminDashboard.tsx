@@ -1241,36 +1241,129 @@ export default function AdminDashboard() {
               {/* Courses Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCourses.length > 0 ? (
-                  filteredCourses.map((course) => (
-                  <div key={course.id} className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-gray-900">
-                        {course.title}
-                      </h3>
-                      <span className="px-2 py-1 text-xs font-['DM_Sans',sans-serif] rounded-full bg-green-100 text-green-800">
-                        Published
-                      </span>
+                  filteredCourses.map((course) => {
+                  const getCardStyles = () => {
+                    switch(course.category) {
+                      case 'Leadership':
+                        return {
+                          bgColor: 'bg-white',
+                          borderColor: 'border-gray-200',
+                          titleColor: 'text-black',
+                          arrowColor: '#016e71',
+                          buttonBg: 'bg-[#333333]',
+                          buttonHover: 'hover:bg-[#555555]',
+                          categoryBg: 'bg-[#4062B9] text-white border-[#4062B9]'
+                        };
+                      case 'Technical':
+                        return {
+                          bgColor: 'bg-white',
+                          borderColor: 'border-gray-200',
+                          titleColor: 'text-black',
+                          arrowColor: '#f58c21',
+                          buttonBg: 'bg-[#333333]',
+                          buttonHover: 'hover:bg-[#555555]',
+                          categoryBg: 'bg-[#ED2A10] text-white border-[#ED2A10]'
+                        };
+                      case 'Soft Skills':
+                        return {
+                          bgColor: 'bg-white',
+                          borderColor: 'border-gray-200',
+                          titleColor: 'text-black',
+                          arrowColor: '#ed2a10',
+                          buttonBg: 'bg-[#333333]',
+                          buttonHover: 'hover:bg-[#555555]',
+                          categoryBg: 'bg-[#BB6BD9] text-white border-[#BB6BD9]'
+                        };
+                      case 'Career':
+                        return {
+                          bgColor: 'bg-white',
+                          borderColor: 'border-gray-200',
+                          titleColor: 'text-black',
+                          arrowColor: '#1d1d1d',
+                          buttonBg: 'bg-[#333333]',
+                          buttonHover: 'hover:bg-[#555555]',
+                          categoryBg: 'bg-[#EB9B07] text-white border-[#EB9B07]'
+                        };
+                      case 'Core Hospitality':
+                        return {
+                          bgColor: 'bg-white',
+                          borderColor: 'border-gray-200',
+                          titleColor: 'text-black',
+                          arrowColor: '#8b5cf6',
+                          buttonBg: 'bg-[#333333]',
+                          buttonHover: 'hover:bg-[#555555]',
+                          categoryBg: 'bg-[#D64EB8] text-white border-[#D64EB8]'
+                        };
+                      default:
+                        return {
+                          bgColor: 'bg-white',
+                          borderColor: 'border-gray-200',
+                          titleColor: 'text-black',
+                          arrowColor: '#6b7280',
+                          buttonBg: 'bg-[#333333]',
+                          buttonHover: 'hover:bg-[#555555]',
+                          categoryBg: 'border-gray-200 text-gray-700'
+                        };
+                    }
+                  };
+
+                  const styles = getCardStyles();
+
+                  return (
+                    <div key={course.id} className={`relative rounded-xl ${styles.bgColor} border ${styles.borderColor} p-6 hover:shadow-lg transition-shadow`}>
+                      <div className="flex flex-col gap-4 h-full">
+                        <div className="flex items-start justify-between">
+                          <h3 className={`font-['DM_Sans',sans-serif] font-bold text-2xl tracking-tight ${styles.titleColor}`}>{course.title}</h3>
+                          <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${styles.categoryBg}`}>
+                            {course.category}
+                          </span>
+                        </div>
+                        <p className="font-['DM_Sans',sans-serif] text-black text-lg">{course.description}</p>
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <img src="/ClockCountdown.svg" alt="Duration" className="w-4 h-4 filter brightness-0 opacity-50" />
+                            <span>{course.duration}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {course.level === 'Beginner' ? (
+                              <img src="/StackSimple.svg" alt="Beginner" className="w-4 h-4 filter brightness-0 opacity-50" />
+                            ) : course.level === 'Intermediate' ? (
+                              <img src="/Stack.svg" alt="Intermediate" className="w-4 h-4 filter brightness-0 opacity-50" />
+                            ) : course.level === 'Advanced' ? (
+                              <img src="/Star.svg" alt="Advanced" className="w-4 h-4 filter brightness-0 opacity-50" />
+                            ) : (
+                              <span>📚</span>
+                            )}
+                            <span>{course.level}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className={`font-['DM_Sans',sans-serif] font-bold text-2xl ${styles.titleColor}`}>
+                            {course.price}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => {/* Handle edit */}}
+                              className={`${styles.buttonBg} text-white px-4 py-2 rounded-lg ${styles.buttonHover} transition-colors font-['DM_Sans',sans-serif] font-bold text-sm`}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              onClick={() => {/* Handle delete */}}
+                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <p className="font-['DM_Sans',sans-serif] text-gray-600 mb-4">
-                      {course.description}
-                    </p>
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span>{course.duration}</span>
-                      <span>{course.level}</span>
-                      <span>{course.modules.length} modules</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button className="flex-1 bg-[#0d9488] text-white py-2 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-medium">
-                        Edit Course
-                      </button>
-                      <button className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
                 ) : (
                   <div className="col-span-full text-center py-12">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

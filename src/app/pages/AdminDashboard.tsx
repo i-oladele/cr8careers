@@ -47,7 +47,7 @@ function Sidebar({ activeSection, setActiveSection }: {
   ];
 
   return (
-    <div className="w-64 bg-white shadow-lg fixed left-0 top-20 bottom-0">
+    <div className="w-64 bg-white shadow-lg fixed left-0 top-36 bottom-0">
       <div className="p-6">
         <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-gray-900 mb-4">
           Admin Menu
@@ -1094,9 +1094,9 @@ export default function AdminDashboard() {
         {/* Top Header */}
         <header className="fixed top-0 left-0 right-0 bg-white z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-20">
+            <div className="flex items-center justify-between h-36">
               <div className="flex items-center gap-8">
-                <Link to="/" className="h-16 w-32">
+                <Link to="/" className="h-24 w-48">
                   <img alt="CR8Careers Logo" className="h-full w-full object-contain" src="/logo.png" />
                 </Link>
                 <h1 className="font-['DM_Sans',sans-serif] font-bold text-2xl text-gray-900">
@@ -1122,7 +1122,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Page Content */}
-        <main className="pt-20">
+        <main className="pt-36">
           {activeSection === 'courses' && (
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">

@@ -1078,6 +1078,9 @@ export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('courses');
   const [showCourseWizard, setShowCourseWizard] = useState(false);
   const [courses, setCourses] = useState<Course[]>(coursesData);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterLevel, setFilterLevel] = useState('all');
   const navigate = useNavigate();
 
   // Check if user is admin
@@ -1092,6 +1095,17 @@ export default function AdminDashboard() {
     setCourses([...courses, newCourse]);
     setShowCourseWizard(false);
   };
+
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = filterCategory === 'all' || course.category === filterCategory;
+    const matchesLevel = filterLevel === 'all' || course.level === filterLevel;
+    
+    return matchesSearch && matchesCategory && matchesLevel;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1145,8 +1159,89 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              {/* Search and Filter Section */}
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Search Bar */}
+                  <div className="md:col-span-2">
+                    <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-2">
+                      Search Courses
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search by title, description, or instructor..."
+                        className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 font-['DM_Sans',sans-serif] focus:ring-2 focus:ring-[#ed2a10] focus:border-transparent"
+                      />
+                      <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div>
+                    <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-2">
+                      Category
+                    </label>
+                    <select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif] focus:ring-2 focus:ring-[#ed2a10] focus:border-transparent"
+                    >
+                      <option value="all">All Categories</option>
+                      <option value="Leadership">Leadership</option>
+                      <option value="Technical">Technical</option>
+                      <option value="Soft Skills">Soft Skills</option>
+                      <option value="Career">Career</option>
+                      <option value="Core Hospitality">Core Hospitality</option>
+                    </select>
+                  </div>
+
+                  {/* Level Filter */}
+                  <div>
+                    <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-2">
+                      Level
+                    </label>
+                    <select
+                      value={filterLevel}
+                      onChange={(e) => setFilterLevel(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif] focus:ring-2 focus:ring-[#ed2a10] focus:border-transparent"
+                    >
+                      <option value="all">All Levels</option>
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Clear Filters */}
+                {(searchTerm || filterCategory !== 'all' || filterLevel !== 'all') && (
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="font-['DM_Sans',sans-serif] text-sm text-gray-600">
+                      Showing {filteredCourses.length} of {courses.length} courses
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setFilterCategory('all');
+                        setFilterLevel('all');
+                      }}
+                      className="text-[#ed2a10] hover:text-[#d42610] font-['DM_Sans',sans-serif] font-medium text-sm"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Courses Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map((course) => (
+                {filteredCourses.length > 0 ? (
+                  filteredCourses.map((course) => (
                   <div key={course.id} className="bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-gray-900">
@@ -1175,7 +1270,32 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   </div>
-                ))}
+                ))
+                ) : (
+                  <div className="col-span-full text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="font-['DM_Sans',sans-serif] font-semibold text-lg text-gray-900 mb-2">
+                      No courses found
+                    </h3>
+                    <p className="font-['DM_Sans',sans-serif] text-gray-600 mb-4">
+                      Try adjusting your search or filters to find what you're looking for.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setFilterCategory('all');
+                        setFilterLevel('all');
+                      }}
+                      className="bg-[#0d9488] text-white px-6 py-2 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-medium"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

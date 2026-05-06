@@ -50,9 +50,11 @@ function Sidebar({ activeSection, setActiveSection }: {
     <div className="w-64 bg-white h-screen shadow-lg fixed left-0 top-0">
       <div className="p-6">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#ed2a10] rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">C</span>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="Cr8Careers Logo" 
+            className="h-10 w-auto object-contain"
+          />
           <span className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900">Cr8Careers</span>
         </Link>
       </div>

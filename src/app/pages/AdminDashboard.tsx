@@ -43,7 +43,7 @@ function Sidebar({ activeSection, setActiveSection }: {
 }) {
   const menuItems = [
     { id: 'courses', label: 'Courses', icon: '/Books.svg' },
-    { id: 'jobs', label: 'Job Openings', icon: '💼' },
+    { id: 'jobs', label: 'Job Openings', icon: '/ReadCvLogo.svg' },
   ];
 
   return (

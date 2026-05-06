@@ -50,7 +50,7 @@ function Sidebar({ activeSection, setActiveSection }: {
     <div className="w-64 bg-white shadow-lg fixed left-0 top-36 bottom-0">
       <div className="p-6">
         <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-gray-900 mb-4">
-          Admin Menu
+          Admin Dashboard
         </h3>
       </div>
       

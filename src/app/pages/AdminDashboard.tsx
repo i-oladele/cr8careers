@@ -1099,9 +1099,6 @@ export default function AdminDashboard() {
                 <Link to="/" className="h-24 w-48">
                   <img alt="CR8Careers Logo" className="h-full w-full object-contain" src="/logo.png" />
                 </Link>
-                <h1 className="font-['DM_Sans',sans-serif] font-bold text-2xl text-gray-900">
-                  Admin Dashboard
-                </h1>
               </div>
               <nav className="hidden md:flex gap-8 items-center">
                 <Link to="/" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Home</Link>

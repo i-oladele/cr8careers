@@ -95,10 +95,7 @@ function Sidebar({ activeSection, setActiveSection }: {
 }
 
 // Course Creation Wizard Component
-function CourseCreationWizard({ 
-  onClose, 
-  onSave 
-}: { 
+function CourseCreationWizard({ onClose, onSave }: { 
   onClose: () => void; 
   onSave: (course: Course) => void;
 }) {
@@ -113,12 +110,8 @@ function CourseCreationWizard({
     instructor: ''
   });
   const [modules, setModules] = useState<Module[]>([]);
-  const [currentModule, setCurrentModule] = useState<Module>({
-    id: '',
-    title: '',
-    description: '',
-    lessons: []
-  });
+  const [selectedModule, setSelectedModule] = useState<Module | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [currentLesson, setCurrentLesson] = useState<Lesson>({
     id: '',
     title: '',
@@ -126,9 +119,26 @@ function CourseCreationWizard({
     duration: '',
     type: 'text'
   });
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const totalSteps = 4;
+
+  // Handle navigation back to courses list
+  const handleBackToCourses = () => {
+    setCurrentStep(1);
+    setCourseData({
+      title: '',
+      description: '',
+      duration: '',
+      level: 'Beginner',
+      price: '',
+      category: 'Leadership',
+      instructor: ''
+    });
+    setModules([]);
+    setSelectedModule(null);
+    setUploadedFiles([]);
+    onClose();
+  };
 
   const handleFileUpload = (file: File, url: string) => {
     const newFile: UploadedFile = {
@@ -150,23 +160,24 @@ function CourseCreationWizard({
       lessons: []
     };
     setModules([...modules, newModule]);
-    setCurrentModule(newModule);
+    setSelectedModule(newModule);
   };
 
   const addLesson = () => {
+    if (!selectedModule) return;
     const newLesson: Lesson = {
       id: 'lesson-' + Date.now(),
-      title: `Lesson ${currentModule.lessons.length + 1}`,
+      title: `Lesson ${selectedModule.lessons.length + 1}`,
       content: '',
       duration: '',
       type: 'text'
     };
     const updatedModule = {
-      ...currentModule,
-      lessons: [...currentModule.lessons, newLesson]
+      ...selectedModule,
+      lessons: [...selectedModule.lessons, newLesson]
     };
-    setCurrentModule(updatedModule);
-    setModules(modules.map(m => m.id === currentModule.id ? updatedModule : m));
+    setSelectedModule(updatedModule);
+    setModules(modules.map(m => m.id === selectedModule.id ? updatedModule : m));
     setCurrentLesson(newLesson);
   };
 
@@ -196,24 +207,41 @@ function CourseCreationWizard({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900">
-              Create New Course
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Breadcrumbs */}
+            <nav className="flex items-center gap-2 text-sm">
+              <button
+                onClick={handleBackToCourses}
+                className="text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7 7m0 0a7 7 0 00-14 0 7 7 0 0014 0z" />
+                </svg>
+                <span>Admin Dashboard</span>
+              </button>
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
+              <span className="text-gray-700 font-medium">Create New Course</span>
+            </nav>
           </div>
-          
+          <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900">
+            Create New Course
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>  
           {/* Progress Steps */}
           <div className="flex items-center justify-between mt-4">
             {['Basic Info', 'Modules', 'Content', 'Review'].map((step, index) => (
@@ -240,7 +268,6 @@ function CourseCreationWizard({
               </div>
             ))}
           </div>
-        </div>
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
@@ -400,7 +427,7 @@ function CourseCreationWizard({
                           Module {index + 1}
                         </h4>
                         <button
-                          onClick={() => setCurrentModule(module)}
+                          onClick={() => setSelectedModule(module)}
                           className="text-[#ed2a10] hover:text-[#d42610] font-['DM_Sans',sans-serif] font-medium text-sm"
                         >
                           Edit
@@ -412,8 +439,8 @@ function CourseCreationWizard({
                         onChange={(e) => {
                           const updatedModule = { ...module, title: e.target.value };
                           setModules(modules.map(m => m.id === module.id ? updatedModule : m));
-                          if (currentModule.id === module.id) {
-                            setCurrentModule(updatedModule);
+                          if (selectedModule?.id === module.id) {
+                            setSelectedModule(updatedModule);
                           }
                         }}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif] mb-2"
@@ -424,8 +451,8 @@ function CourseCreationWizard({
                         onChange={(e) => {
                           const updatedModule = { ...module, description: e.target.value };
                           setModules(modules.map(m => m.id === module.id ? updatedModule : m));
-                          if (currentModule.id === module.id) {
-                            setCurrentModule(updatedModule);
+                          if (selectedModule?.id === module.id) {
+                            setSelectedModule(updatedModule);
                           }
                         }}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif]"
@@ -438,7 +465,7 @@ function CourseCreationWizard({
                         </span>
                         <button
                           onClick={() => {
-                            setCurrentModule(module);
+                            setSelectedModule(module);
                             addLesson();
                           }}
                           className="text-[#0d9488] hover:text-[#0a7a70] font-['DM_Sans',sans-serif] font-medium text-sm"
@@ -481,7 +508,7 @@ function CourseCreationWizard({
                           </p>
                           <button
                             onClick={() => {
-                              setCurrentModule(module);
+                              setSelectedModule(module);
                               addLesson();
                             }}
                             className="bg-[#0d9488] text-white px-4 py-2 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-medium text-sm"
@@ -565,7 +592,7 @@ function CourseCreationWizard({
                           
                           <button
                             onClick={() => {
-                              setCurrentModule(module);
+                              setSelectedModule(module);
                               addLesson();
                             }}
                             className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-600 hover:border-[#ed2a10] hover:text-[#ed2a10] transition-colors font-['DM_Sans',sans-serif] font-medium"
@@ -699,7 +726,6 @@ function CourseCreationWizard({
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
@@ -1140,7 +1166,7 @@ export default function AdminDashboard() {
 
         {/* Page Content */}
         <main className="pt-36">
-          {activeSection === 'courses' && (
+          {activeSection === 'courses' && !showCourseWizard && (
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -1152,22 +1178,12 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowCourseWizard(!showCourseWizard)}
+                  onClick={() => setShowCourseWizard(true)}
                   className="bg-[#ed2a10] text-white px-6 py-3 rounded-lg hover:bg-[#d42610] transition-colors font-['DM_Sans',sans-serif] font-semibold"
                 >
-                  {showCourseWizard ? 'Cancel' : 'Create New Course'}
+                  Create New Course
                 </button>
               </div>
-
-              {/* Inline Course Creation Wizard */}
-              {showCourseWizard && (
-                <div className="mb-6">
-                  <CourseCreationWizard
-                    onClose={() => setShowCourseWizard(false)}
-                    onSave={handleCourseSave}
-                  />
-                </div>
-              )}
 
               {/* Search and Filter Section */}
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -1403,10 +1419,36 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* Course Creation Screen */}
+          {activeSection === 'courses' && showCourseWizard && (
+            <div className="p-6">
+              {/* Breadcrumbs */}
+              <nav className="flex items-center gap-2 text-sm mb-6">
+                <button
+                  onClick={() => setShowCourseWizard(false)}
+                  className="text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Courses</span>
+                </button>
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-gray-700 font-medium">Create New Course</span>
+              </nav>
+
+              <CourseCreationWizard
+                onClose={() => setShowCourseWizard(false)}
+                onSave={handleCourseSave}
+              />
+            </div>
+          )}
+
           {activeSection === 'jobs' && <JobOpenings />}
         </main>
       </div>
-
-      </div>
+    </div>
   );
 }

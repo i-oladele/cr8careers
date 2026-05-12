@@ -10,6 +10,7 @@ export interface CourseRow {
   category: string;
   instructor: string;
   modules: any[];
+  thumbnail_url?: string;
   created_at?: string;
 }
 

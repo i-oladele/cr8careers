@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import coursesData, { Course, Module, Lesson, QuizQuestion, QuizOption } from '../data/courseContent';
 import { saveCourse, fetchCourses } from '../../lib/courseService';
+import { supabase } from '../../lib/supabase';
 import { progressTracker } from '../utils/progressTracking';
 
 // Types
@@ -20,6 +21,7 @@ interface CourseFormData {
   price: string;
   category: string;
   instructor: string;
+  thumbnailUrl?: string;
 }
 
 interface JobOpening {
@@ -475,6 +477,9 @@ function CourseCreationWizard({ onClose, onSave }: {
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [lessonFiles, setLessonFiles] = useState<Record<string, File>>({});
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [draggingLessonId, setDraggingLessonId] = useState<string | null>(null);
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const dragLesson = useRef<{ moduleId: string; lessonId: string } | null>(null);
@@ -487,6 +492,26 @@ function CourseCreationWizard({ onClose, onSave }: {
   });
 
   const totalSteps = 3;
+
+  const handleThumbnailChange = (file: File) => {
+    setThumbnailError(null);
+    if (file.size > 5 * 1024 * 1024) {
+      setThumbnailError('File exceeds 5MB limit.');
+      return;
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (img.width > 1920 || img.height > 1080) {
+        setThumbnailError(`Image must be at most 1920×1080px (yours is ${img.width}×${img.height}px).`);
+        return;
+      }
+      setThumbnailFile(file);
+      setThumbnailPreview(URL.createObjectURL(file));
+    };
+    img.src = url;
+  };
 
   // Handle navigation back to courses list
   const handleBackToCourses = () => {
@@ -561,10 +586,21 @@ function CourseCreationWizard({ onClose, onSave }: {
     setCurrentLesson(newLesson);
   };
 
-  const saveCourse = () => {
+  const saveCourse = async () => {
+    let thumbnailUrl = courseData.thumbnailUrl ?? '';
+    if (thumbnailFile && supabase) {
+      const ext = thumbnailFile.name.split('.').pop();
+      const path = `thumbnails/${Date.now()}.${ext}`;
+      const { data, error } = await supabase.storage.from('course-assets').upload(path, thumbnailFile, { upsert: true });
+      if (!error && data) {
+        const { data: urlData } = supabase.storage.from('course-assets').getPublicUrl(data.path);
+        thumbnailUrl = urlData.publicUrl;
+      }
+    }
     const newCourse: Course = {
       id: 'course-' + Date.now(),
       ...courseData,
+      thumbnailUrl,
       modules: modules,
       finalAssessment: {
         questions: [],
@@ -674,6 +710,39 @@ function CourseCreationWizard({ onClose, onSave }: {
                   rows={3}
                   placeholder="Provide a comprehensive description of the course..."
                 />
+              </div>
+
+              {/* Thumbnail upload */}
+              <div>
+                <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-1">
+                  Course Thumbnail
+                </label>
+                <p className="text-xs text-gray-400 font-['DM_Sans',sans-serif] mb-2">
+                  Max 5MB · Max 1920×1080px · JPG or PNG recommended
+                </p>
+                {thumbnailPreview ? (
+                  <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-gray-200">
+                    <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setCourseData({...courseData, thumbnailUrl: ''}); }}
+                      className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                      title="Remove thumbnail"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#ed2a10] hover:bg-red-50 transition-colors">
+                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-['DM_Sans',sans-serif]">Click to upload thumbnail</span>
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleThumbnailChange(f); }} />
+                  </label>
+                )}
+                {thumbnailError && <p className="text-red-500 text-xs mt-1 font-['DM_Sans',sans-serif]">{thumbnailError}</p>}
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -1643,6 +1712,7 @@ export default function AdminDashboard() {
       category: newCourse.category,
       instructor: newCourse.instructor,
       modules: newCourse.modules,
+      thumbnail_url: (newCourse as any).thumbnailUrl ?? '',
     });
     if (!error) {
       setCourses(prev => [newCourse, ...prev]);

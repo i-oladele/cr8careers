@@ -460,7 +460,7 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
 // Course Creation Wizard Component
 function CourseCreationWizard({ onClose, onSave, editingCourse }: {
   onClose: () => void;
-  onSave: (course: Course) => void;
+  onSave: (course: Course) => Promise<string | null>;
   editingCourse?: Course | null;
 }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -588,13 +588,23 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
     setCurrentLesson(newLesson);
   };
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   const saveCourse = async () => {
+    setSaveError(null);
+    setIsSaving(true);
     let thumbnailUrl = courseData.thumbnailUrl ?? '';
     if (thumbnailFile && supabase) {
       const ext = thumbnailFile.name.split('.').pop();
       const path = `thumbnails/${Date.now()}.${ext}`;
       const { data, error } = await supabase.storage.from('course-assets').upload(path, thumbnailFile, { upsert: true });
-      if (!error && data) {
+      if (error) {
+        setThumbnailError(`Thumbnail upload failed: ${error.message}`);
+        setIsSaving(false);
+        return;
+      }
+      if (data) {
         const { data: urlData } = supabase.storage.from('course-assets').getPublicUrl(data.path);
         thumbnailUrl = urlData.publicUrl;
       }
@@ -609,7 +619,9 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
         passingScore: 70
       }
     };
-    onSave(newCourse);
+    const error = await onSave(newCourse);
+    setIsSaving(false);
+    if (error) setSaveError(error);
   };
 
   const nextStep = () => {
@@ -1277,17 +1289,20 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
               </button>
               
               {currentStep === totalSteps ? (
-                <button
-                  onClick={saveCourse}
-                  disabled={!courseData.title || modules.length === 0}
-                  className={`px-6 py-2 rounded-lg font-['DM_Sans',sans-serif] font-medium ${
-                    !courseData.title || modules.length === 0
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-[#ed2a10] text-white hover:bg-[#d42610]'
-                  }`}
-                >
-                  Create Course
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  {saveError && <p className="text-red-500 text-xs font-['DM_Sans',sans-serif]">{saveError}</p>}
+                  <button
+                    onClick={saveCourse}
+                    disabled={!courseData.title || modules.length === 0 || isSaving}
+                    className={`px-6 py-2 rounded-lg font-['DM_Sans',sans-serif] font-medium ${
+                      !courseData.title || modules.length === 0 || isSaving
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-[#ed2a10] text-white hover:bg-[#d42610]'
+                    }`}
+                  >
+                    {isSaving ? 'Saving...' : editingCourse ? 'Update Course' : 'Create Course'}
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={nextStep}
@@ -1717,7 +1732,7 @@ export default function AdminDashboard() {
     });
   }, []);
 
-  const handleCourseSave = async (savedCourse: Course) => {
+  const handleCourseSave = async (savedCourse: Course): Promise<string | null> => {
     const payload = {
       id: savedCourse.id,
       title: savedCourse.title,
@@ -1730,19 +1745,22 @@ export default function AdminDashboard() {
       modules: savedCourse.modules,
       thumbnail_url: savedCourse.thumbnailUrl ?? '',
     };
-    if (editingCourse) {
-      const { error } = await updateCourse(payload);
-      if (!error) {
+    try {
+      if (editingCourse) {
+        const { error } = await updateCourse(payload);
+        if (error) return error;
         setCourses(prev => prev.map(c => c.id === savedCourse.id ? savedCourse : c));
-      }
-    } else {
-      const { error } = await saveCourse(payload);
-      if (!error) {
+      } else {
+        const { error } = await saveCourse(payload);
+        if (error) return error;
         setCourses(prev => [savedCourse, ...prev]);
       }
+    } catch (e: any) {
+      return e?.message ?? 'Something went wrong. Please try again.';
     }
     setEditingCourse(null);
     setShowCourseWizard(false);
+    return null;
   };
 
   const filteredCourses = courses.filter(course => {

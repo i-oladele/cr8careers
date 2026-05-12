@@ -595,18 +595,18 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
     setSaveError(null);
     setIsSaving(true);
     let thumbnailUrl = courseData.thumbnailUrl ?? '';
-    if (thumbnailFile && supabase) {
-      const ext = thumbnailFile.name.split('.').pop();
-      const path = `thumbnails/${Date.now()}.${ext}`;
-      const { data, error } = await supabase.storage.from('course-assets').upload(path, thumbnailFile, { upsert: true });
-      if (error) {
-        setThumbnailError(`Thumbnail upload failed: ${error.message}`);
+    if (thumbnailFile) {
+      try {
+        thumbnailUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Could not read the image file.'));
+          reader.readAsDataURL(thumbnailFile);
+        });
+      } catch (e: any) {
+        setSaveError(e.message ?? 'Failed to process thumbnail.');
         setIsSaving(false);
         return;
-      }
-      if (data) {
-        const { data: urlData } = supabase.storage.from('course-assets').getPublicUrl(data.path);
-        thumbnailUrl = urlData.publicUrl;
       }
     }
     const newCourse: Course = {
@@ -1266,6 +1266,12 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
         </div>
 
         {/* Footer */}
+        {saveError && (
+          <div className="mx-6 mb-0 mt-0 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm font-['DM_Sans',sans-serif]">
+            <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>{saveError}</span>
+          </div>
+        )}
         <div className="border-t border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <button
@@ -1290,7 +1296,6 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
               
               {currentStep === totalSteps ? (
                 <div className="flex flex-col items-end gap-1">
-                  {saveError && <p className="text-red-500 text-xs font-['DM_Sans',sans-serif]">{saveError}</p>}
                   <button
                     onClick={saveCourse}
                     disabled={!courseData.title || modules.length === 0 || isSaving}

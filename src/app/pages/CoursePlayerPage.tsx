@@ -26,63 +26,69 @@ function Header() {
 }
 
 function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () => void }) {
+  const questions = lesson.quizQuestions ?? [];
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [score, setScore] = useState(0);
+  const [results, setResults] = useState<boolean[]>([]);
 
-  const questions = [
-    {
-      id: 'q1',
-      question: 'What is the most important leadership quality?',
-      options: ['Technical expertise', 'Vision and communication', 'Strict authority', 'Perfectionism'],
-      correctAnswer: 1
-    },
-    {
-      id: 'q2',
-      question: 'During team "storming" stage, leaders should:',
-      options: ['Avoid all conflict', 'Establish clear rules', 'Facilitate constructive resolution', 'Take over decisions'],
-      correctAnswer: 2
-    },
-    {
-      id: 'q3',
-      question: 'SMART goals are:',
-      options: ['Simple, Measurable, Achievable, Relevant, Time-bound', 'Specific, Measurable, Achievable, Relevant, Time-bound', 'Strategic, Measurable, Actionable, Relevant, Time-bound', 'Simple, Manageable, Achievable, Relevant, Time-bound'],
-      correctAnswer: 1
+  if (questions.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-lg text-center">
+        <p className="font-['DM_Sans',sans-serif] text-gray-500">No questions have been added to this quiz yet.</p>
+        <button onClick={onComplete} className="mt-4 bg-[#0d9488] text-white px-6 py-2 rounded-lg font-['DM_Sans',sans-serif] font-bold hover:bg-[#0a7a70]">Continue</button>
+      </div>
+    );
+  }
+
+  const q = questions[currentQuestion];
+  const isMulti = q.type === 'multi';
+
+  const toggleOption = (optionId: string) => {
+    if (submitted) return;
+    if (isMulti) {
+      setSelectedOptions(prev =>
+        prev.includes(optionId) ? prev.filter(id => id !== optionId) : [...prev, optionId]
+      );
+    } else {
+      setSelectedOptions([optionId]);
     }
-  ];
+  };
 
-  const handleAnswer = (answerIndex: number) => {
-    const newAnswers = [...answers];
-    newAnswers[currentQuestion] = answerIndex;
-    setAnswers(newAnswers);
+  const handleSubmit = () => {
+    if (selectedOptions.length === 0) return;
+    const correct = q.correctAnswers ?? [];
+    const isCorrect =
+      selectedOptions.length === correct.length &&
+      selectedOptions.every(id => correct.includes(id));
+    const newResults = [...results, isCorrect];
+    setResults(newResults);
+    setSubmitted(true);
+  };
 
+  const handleNext = () => {
+    setSubmitted(false);
+    setSelectedOptions([]);
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      calculateScore();
+      setShowResults(true);
     }
   };
 
-  const calculateScore = () => {
-    let correct = 0;
-    questions.forEach((q, index) => {
-      if (answers[index] === q.correctAnswer) {
-        correct++;
-      }
-    });
-    const finalScore = (correct / questions.length) * 100;
-    setScore(finalScore);
-    setShowResults(true);
-  };
-
   if (showResults) {
+    const correct = results.filter(Boolean).length;
+    const score = Math.round((correct / questions.length) * 100);
     return (
       <div className="max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-lg">
         <h3 className="font-['DM_Sans',sans-serif] font-bold text-2xl mb-6">Quiz Results</h3>
         <div className="text-center mb-6">
-          <div className="text-6xl font-bold text-[#0d9488] mb-2">{Math.round(score)}%</div>
-          <p className="font-['DM_Sans',sans-serif] text-lg">
+          <div className="text-6xl font-bold text-[#0d9488] mb-2">{score}%</div>
+          <p className="font-['DM_Sans',sans-serif] text-lg text-gray-600">
+            {correct} of {questions.length} correct
+          </p>
+          <p className="font-['DM_Sans',sans-serif] text-lg mt-2 font-medium">
             {score >= 70 ? 'Congratulations! You passed!' : 'Keep practicing and try again!'}
           </p>
         </div>
@@ -104,27 +110,60 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
             Question {currentQuestion + 1} of {questions.length}
           </span>
           <div className="w-full bg-gray-200 rounded-full h-2 ml-4">
-            <div 
+            <div
               className="bg-[#0d9488] h-2 rounded-full transition-all"
               style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
             />
           </div>
         </div>
-        <h3 className="font-['DM_Sans',sans-serif] font-bold text-xl mb-6">
-          {questions[currentQuestion].question}
-        </h3>
+        {isMulti && (
+          <p className="text-xs text-gray-400 mb-2 font-['DM_Sans',sans-serif]">Select all that apply</p>
+        )}
+        <h3 className="font-['DM_Sans',sans-serif] font-bold text-xl mb-6">{q.question}</h3>
       </div>
-      <div className="space-y-3">
-        {questions[currentQuestion].options.map((option, index) => (
-          <button
-            key={index}
-            onClick={() => handleAnswer(index)}
-            className="w-full text-left p-4 border border-gray-300 rounded-lg hover:border-[#0d9488] hover:bg-[#f0fdf4] transition-colors"
-          >
-            <span className="font-['DM_Sans',sans-serif]">{option}</span>
-          </button>
-        ))}
+
+      <div className="space-y-3 mb-6">
+        {q.options.map(option => {
+          const selected = selectedOptions.includes(option.id);
+          const isCorrect = (q.correctAnswers ?? []).includes(option.id);
+          let optionClass = 'w-full text-left p-4 border rounded-lg transition-colors font-["DM_Sans",sans-serif]';
+          if (submitted) {
+            if (isCorrect) optionClass += ' border-green-500 bg-green-50 text-green-800';
+            else if (selected) optionClass += ' border-red-400 bg-red-50 text-red-700';
+            else optionClass += ' border-gray-200 text-gray-500';
+          } else {
+            optionClass += selected
+              ? ' border-[#0d9488] bg-[#f0fdf4]'
+              : ' border-gray-300 hover:border-[#0d9488] hover:bg-[#f0fdf4]';
+          }
+          return (
+            <button key={option.id} onClick={() => toggleOption(option.id)} className={optionClass}>
+              <span className="font-['DM_Sans',sans-serif]">{option.text}</span>
+            </button>
+          );
+        })}
       </div>
+
+      {!submitted ? (
+        <button
+          onClick={handleSubmit}
+          disabled={selectedOptions.length === 0}
+          className={`w-full py-3 rounded-lg font-['DM_Sans',sans-serif] font-bold transition-colors ${
+            selectedOptions.length === 0
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-[#ed2a10] text-white hover:bg-[#d42610]'
+          }`}
+        >
+          Submit Answer
+        </button>
+      ) : (
+        <button
+          onClick={handleNext}
+          className="w-full py-3 rounded-lg bg-[#0d9488] text-white font-['DM_Sans',sans-serif] font-bold hover:bg-[#0a7a70] transition-colors"
+        >
+          {currentQuestion < questions.length - 1 ? 'Next Question' : 'See Results'}
+        </button>
+      )}
     </div>
   );
 }
@@ -480,25 +519,10 @@ export default function CoursePlayerPage() {
                   onComplete={handleNextLesson}
                 />
               ) : (
-                <div>
-                  <div className="prose max-w-none">
-                    {currentLessonData.content.split('\n').map((paragraph, index) => {
-                      if (paragraph.startsWith('# ')) {
-                        return <h1 key={index} className="font-['DM_Sans',sans-serif] font-bold text-3xl mb-4 text-[#1d1d1d]">{paragraph.substring(2)}</h1>;
-                      } else if (paragraph.startsWith('## ')) {
-                        return <h2 key={index} className="font-['DM_Sans',sans-serif] font-bold text-2xl mb-3 text-[#1d1d1d] mt-6">{paragraph.substring(3)}</h2>;
-                      } else if (paragraph.startsWith('### ')) {
-                        return <h3 key={index} className="font-['DM_Sans',sans-serif] font-bold text-xl mb-2 text-[#1d1d1d] mt-4">{paragraph.substring(4)}</h3>;
-                      } else if (paragraph.startsWith('- ')) {
-                        return <li key={index} className="font-['DM_Sans',sans-serif] text-gray-700 mb-2 ml-4 list-disc">{paragraph.substring(2)}</li>;
-                      } else if (paragraph.trim() === '') {
-                        return <br key={index} />;
-                      } else {
-                        return <p key={index} className="font-['DM_Sans',sans-serif] text-gray-700 mb-4 leading-relaxed">{paragraph}</p>;
-                      }
-                    })}
-                  </div>
-                </div>
+                <div
+                  className="prose max-w-none font-['DM_Sans',sans-serif] text-gray-700 leading-relaxed rich-content"
+                  dangerouslySetInnerHTML={{ __html: currentLessonData.content }}
+                />
               )}
             </div>
 

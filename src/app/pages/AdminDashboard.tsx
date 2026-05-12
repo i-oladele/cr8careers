@@ -587,15 +587,12 @@ function CourseCreationWizard({ onClose, onSave }: {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Header */}
       <div className="border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div></div>
-          <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900">
-            Create New Course
-          </h2>
-        </div>
+        <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900 text-center">
+          Create New Course
+        </h2>
       </div>  
           {/* Progress Steps */}
           <div className="flex items-center justify-center mt-4 gap-0">
@@ -1953,6 +1950,16 @@ export default function AdminDashboard() {
           {/* Course Creation Screen */}
           {activeSection === 'courses' && showCourseWizard && (
             <div className="p-6">
+              <nav className="flex items-center gap-2 text-sm mb-4 font-['DM_Sans',sans-serif]">
+                <button
+                  onClick={() => setShowCourseWizard(false)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Admin Dashboard
+                </button>
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <span className="text-gray-900 font-medium">Create New Course</span>
+              </nav>
 
               <CourseCreationWizard
                 onClose={() => setShowCourseWizard(false)}

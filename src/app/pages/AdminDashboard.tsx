@@ -8,7 +8,7 @@ import {
   Quote, Code, Minus, Link2, Palette, Highlighter, Eraser, Paperclip, X, GripVertical, ChevronDown,
 } from 'lucide-react';
 import coursesData, { Course, Module, Lesson, QuizQuestion, QuizOption } from '../data/courseContent';
-import { saveCourse, updateCourse, fetchCourses } from '../../lib/courseService';
+import { saveCourse, updateCourse, fetchCourses, deleteCourse } from '../../lib/courseService';
 import { supabase } from '../../lib/supabase';
 import { progressTracker } from '../utils/progressTracking';
 
@@ -598,10 +598,26 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
     if (thumbnailFile) {
       try {
         thumbnailUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Could not read the image file.'));
-          reader.readAsDataURL(thumbnailFile);
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(thumbnailFile);
+          img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            const canvas = document.createElement('canvas');
+            const maxW = 640;
+            const maxH = 360;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+            if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { reject(new Error('Canvas not supported.')); return; }
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          };
+          img.onerror = () => reject(new Error('Could not read the image file.'));
+          img.src = objectUrl;
         });
       } catch (e: any) {
         setSaveError(e.message ?? 'Failed to process thumbnail.');
@@ -1726,23 +1742,27 @@ export default function AdminDashboard() {
     }
   }, [navigate]);
 
+  const mapRowToCourse = (row: any): Course => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    duration: row.duration,
+    level: row.level,
+    price: row.price,
+    category: row.category,
+    instructor: row.instructor,
+    modules: row.modules ?? [],
+    thumbnailUrl: row.thumbnail_url ?? '',
+  });
+
+  const reloadCourses = async () => {
+    const { data, error } = await fetchCourses();
+    if (!error) setCourses(data.map(mapRowToCourse));
+  };
+
   // Fetch courses from Supabase on mount
   useEffect(() => {
-    fetchCourses().then(({ data, error }) => {
-      if (!error) setCourses(data.map(row => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        duration: row.duration,
-        level: row.level,
-        price: row.price,
-        category: row.category,
-        instructor: row.instructor,
-        modules: row.modules ?? [],
-        thumbnailUrl: row.thumbnail_url ?? '',
-      })));
-      setCoursesLoading(false);
-    });
+    reloadCourses().finally(() => setCoursesLoading(false));
   }, []);
 
   const handleCourseSave = async (savedCourse: Course): Promise<string | null> => {
@@ -1762,14 +1782,13 @@ export default function AdminDashboard() {
       if (editingCourse) {
         const { error } = await updateCourse(payload);
         if (error) { showToast(error, 'error'); return error; }
-        setCourses(prev => prev.map(c => c.id === savedCourse.id ? savedCourse : c));
         showToast('Course updated successfully.', 'success');
       } else {
         const { error } = await saveCourse(payload);
         if (error) { showToast(error, 'error'); return error; }
-        setCourses(prev => [savedCourse, ...prev]);
         showToast('Course created successfully.', 'success');
       }
+      await reloadCourses();
     } catch (e: any) {
       const msg = e?.message ?? 'Something went wrong. Please try again.';
       showToast(msg, 'error');
@@ -1778,6 +1797,14 @@ export default function AdminDashboard() {
     setEditingCourse(null);
     setShowCourseWizard(false);
     return null;
+  };
+
+  const handleDeleteCourse = async (id: string) => {
+    if (!confirm('Delete this course? This cannot be undone.')) return;
+    const { error } = await deleteCourse(id);
+    if (error) { showToast(error, 'error'); return; }
+    showToast('Course deleted.', 'success');
+    await reloadCourses();
   };
 
   const filteredCourses = courses.filter(course => {
@@ -2011,15 +2038,20 @@ export default function AdminDashboard() {
                   const styles = getCardStyles();
 
                   return (
-                    <div key={course.id} className={`relative rounded-xl ${styles.bgColor} border ${styles.borderColor} p-6 hover:shadow-lg transition-shadow`}>
-                      <div className="flex flex-col gap-4 h-full">
+                    <div key={course.id} className={`relative rounded-xl ${styles.bgColor} border ${styles.borderColor} overflow-hidden hover:shadow-lg transition-shadow flex flex-col`}>
+                      {course.thumbnailUrl && (
+                        <div className="w-full aspect-video bg-gray-100 shrink-0">
+                          <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-4 flex-1 p-6">
                         <div className="flex items-start justify-between">
                           <h3 className={`font-['DM_Sans',sans-serif] font-bold text-2xl tracking-tight ${styles.titleColor}`}>{course.title}</h3>
                           <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${styles.categoryBg}`}>
                             {course.category}
                           </span>
                         </div>
-                        <p className="font-['DM_Sans',sans-serif] text-black text-lg">{course.description}</p>
+                        <p className="font-['DM_Sans',sans-serif] text-black text-lg">{course.description.length > 120 ? course.description.slice(0, 120) + '...' : course.description}</p>
                         
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
@@ -2052,7 +2084,7 @@ export default function AdminDashboard() {
                               Edit
                             </button>
                             <button 
-                              onClick={() => {/* Handle delete */}}
+                              onClick={() => handleDeleteCourse(course.id)}
                               className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             >
                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

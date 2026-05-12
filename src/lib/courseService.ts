@@ -9,14 +9,31 @@ export interface CourseRow {
   price: string;
   category: string;
   instructor: string;
-  modules: any[];
+  modules: any;
   thumbnail_url?: string;
   created_at?: string;
 }
 
+// Thumbnail is packed inside the modules JSONB column to avoid needing a separate column.
+function packModules(modules: any[], thumbnailUrl: string): any {
+  return { __thumbnail: thumbnailUrl, items: modules };
+}
+
+function unpackModules(raw: any): { modules: any[]; thumbnail_url: string } {
+  if (raw && !Array.isArray(raw) && '__thumbnail' in raw) {
+    return { modules: raw.items ?? [], thumbnail_url: raw.__thumbnail ?? '' };
+  }
+  return { modules: Array.isArray(raw) ? raw : [], thumbnail_url: '' };
+}
+
 export async function saveCourse(course: Omit<CourseRow, 'created_at'>): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase not configured' };
-  const { error } = await supabase.from('courses').insert([course]);
+  const packed = {
+    ...course,
+    modules: packModules(course.modules, course.thumbnail_url ?? ''),
+    thumbnail_url: undefined,
+  };
+  const { error } = await supabase.from('courses').insert([packed]);
   return { error: error?.message ?? null };
 }
 
@@ -26,7 +43,11 @@ export async function fetchCourses(): Promise<{ data: CourseRow[]; error: string
     .from('courses')
     .select('*')
     .order('created_at', { ascending: false });
-  return { data: data ?? [], error: error?.message ?? null };
+  const unpacked = (data ?? []).map(row => {
+    const { modules, thumbnail_url } = unpackModules(row.modules);
+    return { ...row, modules, thumbnail_url: thumbnail_url || row.thumbnail_url || '' };
+  });
+  return { data: unpacked, error: error?.message ?? null };
 }
 
 export async function updateCourse(course: Omit<CourseRow, 'created_at'>): Promise<{ error: string | null }> {
@@ -39,8 +60,7 @@ export async function updateCourse(course: Omit<CourseRow, 'created_at'>): Promi
     price: course.price,
     category: course.category,
     instructor: course.instructor,
-    modules: course.modules,
-    thumbnail_url: course.thumbnail_url,
+    modules: packModules(course.modules, course.thumbnail_url ?? ''),
   }).eq('id', course.id);
   return { error: error?.message ?? null };
 }

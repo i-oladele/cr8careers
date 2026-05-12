@@ -169,13 +169,13 @@ function CourseCard({ title, description, duration, level, price, category, cour
   const styles = getCardStyles();
 
   return (
-    <div className={`relative rounded-xl ${styles.bgColor} border ${styles.borderColor} overflow-hidden hover:shadow-lg transition-shadow`}>
+    <div className={`relative rounded-xl ${styles.bgColor} border ${styles.borderColor} overflow-hidden hover:shadow-lg transition-shadow flex flex-col`}>
       {thumbnailUrl && (
-        <div className="w-full aspect-video bg-gray-100">
+        <div className="w-full aspect-video bg-gray-100 shrink-0">
           <img src={thumbnailUrl} alt={title} className="w-full h-full object-cover" />
         </div>
       )}
-      <div className="flex flex-col gap-4 h-full p-6">
+      <div className="flex flex-col gap-4 flex-1 p-6">
         <div className="flex items-start justify-between">
           <h3 className={`font-['DM_Sans',sans-serif] font-bold text-2xl tracking-tight ${styles.titleColor}`}>{title}</h3>
           <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
@@ -189,7 +189,7 @@ function CourseCard({ title, description, duration, level, price, category, cour
             {category}
           </span>
         </div>
-        <p className="font-['DM_Sans',sans-serif] text-black text-lg">{description}</p>
+        <p className="font-['DM_Sans',sans-serif] text-black text-lg">{description.length > 120 ? description.slice(0, 120) + '...' : description}</p>
         
         <div className="flex items-center gap-4 text-sm text-gray-600">
           <div className="flex items-center gap-2">

@@ -8,7 +8,7 @@ import {
   Quote, Code, Minus, Link2, Palette, Highlighter, Eraser, Paperclip, X, GripVertical, ChevronDown,
 } from 'lucide-react';
 import coursesData, { Course, Module, Lesson, QuizQuestion, QuizOption } from '../data/courseContent';
-import { saveCourse, fetchCourses } from '../../lib/courseService';
+import { saveCourse, updateCourse, fetchCourses } from '../../lib/courseService';
 import { supabase } from '../../lib/supabase';
 import { progressTracker } from '../utils/progressTracking';
 
@@ -458,27 +458,29 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
 }
 
 // Course Creation Wizard Component
-function CourseCreationWizard({ onClose, onSave }: { 
-  onClose: () => void; 
+function CourseCreationWizard({ onClose, onSave, editingCourse }: {
+  onClose: () => void;
   onSave: (course: Course) => void;
+  editingCourse?: Course | null;
 }) {
   const [currentStep, setCurrentStep] = useState(1);
-  const [isFree, setIsFree] = useState(false);
+  const [isFree, setIsFree] = useState(editingCourse?.price === 'Free');
   const [courseData, setCourseData] = useState<CourseFormData>({
-    title: '',
-    description: '',
-    duration: '',
-    level: 'Beginner',
-    price: '',
-    category: 'Leadership',
-    instructor: ''
+    title: editingCourse?.title ?? '',
+    description: editingCourse?.description ?? '',
+    duration: editingCourse?.duration ?? '',
+    level: editingCourse?.level ?? 'Beginner',
+    price: editingCourse?.price === 'Free' ? '' : (editingCourse?.price ?? ''),
+    category: editingCourse?.category ?? 'Leadership',
+    instructor: editingCourse?.instructor ?? '',
+    thumbnailUrl: editingCourse?.thumbnailUrl ?? '',
   });
-  const [modules, setModules] = useState<Module[]>([]);
+  const [modules, setModules] = useState<Module[]>(editingCourse?.modules ?? []);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [lessonFiles, setLessonFiles] = useState<Record<string, File>>({});
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(editingCourse?.thumbnailUrl ?? null);
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [draggingLessonId, setDraggingLessonId] = useState<string | null>(null);
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
@@ -598,11 +600,11 @@ function CourseCreationWizard({ onClose, onSave }: {
       }
     }
     const newCourse: Course = {
-      id: 'course-' + Date.now(),
+      id: editingCourse?.id ?? 'course-' + Date.now(),
       ...courseData,
       thumbnailUrl,
       modules: modules,
-      finalAssessment: {
+      finalAssessment: editingCourse?.finalAssessment ?? {
         questions: [],
         passingScore: 70
       }
@@ -838,16 +840,10 @@ function CourseCreationWizard({ onClose, onSave }: {
           {/* Step 2: Content (Modules + Lessons) */}
           {currentStep === 2 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className="font-['DM_Sans',sans-serif] font-semibold text-lg">
                   Content
                 </h3>
-                <button
-                  onClick={addModule}
-                  className="bg-[#ed2a10] text-white px-4 py-2 rounded-lg hover:bg-[#d42610] transition-colors font-['DM_Sans',sans-serif] font-medium"
-                >
-                  Add Module
-                </button>
               </div>
 
               {modules.length === 0 ? (
@@ -1135,6 +1131,12 @@ function CourseCreationWizard({ onClose, onSave }: {
                       )}
                     </div>
                   ))}
+                  <button
+                    onClick={addModule}
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-600 hover:border-[#ed2a10] hover:text-[#ed2a10] transition-colors font-['DM_Sans',sans-serif] font-medium"
+                  >
+                    + Add Module
+                  </button>
                 </div>
               )}
             </div>
@@ -1680,6 +1682,7 @@ function JobOpenings() {
 export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('courses');
   const [showCourseWizard, setShowCourseWizard] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1698,27 +1701,47 @@ export default function AdminDashboard() {
   // Fetch courses from Supabase on mount
   useEffect(() => {
     fetchCourses().then(({ data, error }) => {
-      if (!error) setCourses(data as unknown as Course[]);
+      if (!error) setCourses(data.map(row => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        duration: row.duration,
+        level: row.level,
+        price: row.price,
+        category: row.category,
+        instructor: row.instructor,
+        modules: row.modules ?? [],
+        thumbnailUrl: row.thumbnail_url ?? '',
+      })));
       setCoursesLoading(false);
     });
   }, []);
 
-  const handleCourseSave = async (newCourse: Course) => {
-    const { error } = await saveCourse({
-      id: newCourse.id,
-      title: newCourse.title,
-      description: newCourse.description,
-      duration: newCourse.duration,
-      level: newCourse.level,
-      price: newCourse.price,
-      category: newCourse.category,
-      instructor: newCourse.instructor,
-      modules: newCourse.modules,
-      thumbnail_url: (newCourse as any).thumbnailUrl ?? '',
-    });
-    if (!error) {
-      setCourses(prev => [newCourse, ...prev]);
+  const handleCourseSave = async (savedCourse: Course) => {
+    const payload = {
+      id: savedCourse.id,
+      title: savedCourse.title,
+      description: savedCourse.description,
+      duration: savedCourse.duration,
+      level: savedCourse.level,
+      price: savedCourse.price,
+      category: savedCourse.category,
+      instructor: savedCourse.instructor,
+      modules: savedCourse.modules,
+      thumbnail_url: savedCourse.thumbnailUrl ?? '',
+    };
+    if (editingCourse) {
+      const { error } = await updateCourse(payload);
+      if (!error) {
+        setCourses(prev => prev.map(c => c.id === savedCourse.id ? savedCourse : c));
+      }
+    } else {
+      const { error } = await saveCourse(payload);
+      if (!error) {
+        setCourses(prev => [savedCourse, ...prev]);
+      }
     }
+    setEditingCourse(null);
     setShowCourseWizard(false);
   };
 
@@ -1970,8 +1993,8 @@ export default function AdminDashboard() {
                             {course.price === 'Free' ? 'Free' : course.price ? `₦${course.price}` : ''}
                           </div>
                           <div className="flex items-center gap-2">
-                            <button 
-                              onClick={() => {/* Handle edit */}}
+                            <button
+                              onClick={() => { setEditingCourse(course); setShowCourseWizard(true); }}
                               className={`${styles.buttonBg} text-white px-4 py-2 rounded-lg ${styles.buttonHover} transition-colors font-['DM_Sans',sans-serif] font-bold text-sm`}
                             >
                               Edit
@@ -2024,18 +2047,19 @@ export default function AdminDashboard() {
             <div className="p-6">
               <nav className="flex items-center gap-2 text-sm mb-4 font-['DM_Sans',sans-serif]">
                 <button
-                  onClick={() => setShowCourseWizard(false)}
+                  onClick={() => { setShowCourseWizard(false); setEditingCourse(null); }}
                   className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   Admin Dashboard
                 </button>
                 <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <span className="text-gray-900 font-medium">Create New Course</span>
+                <span className="text-gray-900 font-medium">{editingCourse ? 'Edit Course' : 'Create New Course'}</span>
               </nav>
 
               <CourseCreationWizard
-                onClose={() => setShowCourseWizard(false)}
+                onClose={() => { setShowCourseWizard(false); setEditingCourse(null); }}
                 onSave={handleCourseSave}
+                editingCourse={editingCourse}
               />
             </div>
           )}

@@ -43,6 +43,7 @@ export interface Course {
   category: string;
   instructor: string;
   modules: Module[];
+  thumbnailUrl?: string;
   finalAssessment?: {
     questions: {
       id: string;

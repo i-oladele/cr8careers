@@ -29,6 +29,22 @@ export async function fetchCourses(): Promise<{ data: CourseRow[]; error: string
   return { data: data ?? [], error: error?.message ?? null };
 }
 
+export async function updateCourse(course: Omit<CourseRow, 'created_at'>): Promise<{ error: string | null }> {
+  if (!supabase) return { error: 'Supabase not configured' };
+  const { error } = await supabase.from('courses').update({
+    title: course.title,
+    description: course.description,
+    duration: course.duration,
+    level: course.level,
+    price: course.price,
+    category: course.category,
+    instructor: course.instructor,
+    modules: course.modules,
+    thumbnail_url: course.thumbnail_url,
+  }).eq('id', course.id);
+  return { error: error?.message ?? null };
+}
+
 export async function deleteCourse(id: string): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase not configured' };
   const { error } = await supabase.from('courses').delete().eq('id', id);

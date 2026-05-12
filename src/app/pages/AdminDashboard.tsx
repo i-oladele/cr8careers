@@ -712,69 +712,90 @@ function CourseCreationWizard({ onClose, onSave }: {
                 />
               </div>
 
-              {/* Thumbnail upload */}
-              <div>
-                <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-1">
-                  Course Thumbnail
-                </label>
-                <p className="text-xs text-gray-400 font-['DM_Sans',sans-serif] mb-2">
-                  Max 5MB · Max 1920×1080px · JPG or PNG recommended
-                </p>
-                {thumbnailPreview ? (
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-gray-200">
-                    <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
-                    <button
-                      onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setCourseData({...courseData, thumbnailUrl: ''}); }}
-                      className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
-                      title="Remove thumbnail"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#ed2a10] hover:bg-red-50 transition-colors">
-                    <div className="flex flex-col items-center gap-2 text-gray-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-sm font-['DM_Sans',sans-serif]">Click to upload thumbnail</span>
-                    </div>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleThumbnailChange(f); }} />
+              {/* Thumbnail + Duration/Level side by side — same 2-col grid as other rows */}
+              <div className="grid grid-cols-2 gap-4 items-start">
+                {/* Thumbnail */}
+                <div>
+                  <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-1">
+                    Course Thumbnail
                   </label>
-                )}
-                {thumbnailError && <p className="text-red-500 text-xs mt-1 font-['DM_Sans',sans-serif]">{thumbnailError}</p>}
+                  <p className="text-xs text-gray-400 font-['DM_Sans',sans-serif] mb-2">
+                    Max 5MB · 1920×1080px
+                  </p>
+                  {thumbnailPreview ? (
+                    <div className="relative w-full h-36 rounded-lg overflow-hidden border border-gray-200">
+                      <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setCourseData({...courseData, thumbnailUrl: ''}); }}
+                        className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                        title="Remove thumbnail"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#ed2a10] hover:bg-red-50 transition-colors">
+                      <div className="flex flex-col items-center gap-1 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-xs font-['DM_Sans',sans-serif] text-center">Click to upload</span>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleThumbnailChange(f); }} />
+                    </label>
+                  )}
+                  {thumbnailError && <p className="text-red-500 text-xs mt-1 font-['DM_Sans',sans-serif]">{thumbnailError}</p>}
+                </div>
+
+                {/* Duration + Level stacked on the right */}
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-1">
+                      Duration *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={courseData.duration}
+                      onChange={(e) => setCourseData({...courseData, duration: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif]"
+                      placeholder="e.g., 6 weeks"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-1">
+                      Level *
+                    </label>
+                    <select
+                      value={courseData.level}
+                      onChange={(e) => setCourseData({...courseData, level: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif]"
+                    >
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-2">
-                    Duration *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={courseData.duration}
-                    onChange={(e) => setCourseData({...courseData, duration: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif]"
-                    placeholder="e.g., 6 weeks"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-2">
-                    Level *
+                    Category *
                   </label>
                   <select
-                    value={courseData.level}
-                    onChange={(e) => setCourseData({...courseData, level: e.target.value})}
+                    value={courseData.category}
+                    onChange={(e) => setCourseData({...courseData, category: e.target.value})}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif]"
                   >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
+                    <option value="Leadership">Leadership</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Soft Skills">Soft Skills</option>
+                    <option value="Career">Career</option>
+                    <option value="Core Hospitality">Core Hospitality</option>
                   </select>
                 </div>
-                
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="font-['DM_Sans',sans-serif] font-medium text-gray-700">
@@ -809,25 +830,6 @@ function CourseCreationWizard({ onClose, onSave }: {
                       placeholder="75,000"
                     />
                   </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-2">
-                    Category *
-                  </label>
-                  <select
-                    value={courseData.category}
-                    onChange={(e) => setCourseData({...courseData, category: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif]"
-                  >
-                    <option value="Leadership">Leadership</option>
-                    <option value="Technical">Technical</option>
-                    <option value="Soft Skills">Soft Skills</option>
-                    <option value="Career">Career</option>
-                    <option value="Core Hospitality">Core Hospitality</option>
-                  </select>
                 </div>
               </div>
             </div>

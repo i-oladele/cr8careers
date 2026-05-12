@@ -1,12 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import coursesData, { Course, Module, Lesson } from '../data/courseContent';
 import { fetchCourses } from '../../lib/courseService';
 import { downloadCertificate, CertificatePreview } from '../components/CertificateGenerator';
 import { progressTracker } from '../utils/progressTracking';
+import { useAuth } from '../context/AuthContext';
 
 // Header Component
 function Header() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSignOut = async () => {
+    setDropdownOpen(false);
+    await signOut();
+    navigate('/');
+  };
+
+  const initial = user?.email?.[0].toUpperCase() ?? '';
+
   return (
     <header className="fixed top-0 left-0 right-0 w-full bg-white z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,6 +43,33 @@ function Header() {
             <Link to="/courses" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Courses</Link>
             <Link to="/contact" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Contact</Link>
           </nav>
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(o => !o)}
+                  className="w-10 h-10 rounded-full bg-[#333333] text-white flex items-center justify-center font-['DM_Sans',sans-serif] font-bold text-sm hover:bg-[#555555] transition-colors"
+                  title={user.email ?? ''}
+                >
+                  {initial}
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="font-['DM_Sans',sans-serif] text-xs text-gray-400">Signed in as</p>
+                      <p className="font-['DM_Sans',sans-serif] text-sm font-semibold text-gray-800 truncate">{user.email}</p>
+                    </div>
+                    <Link to="/courses" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      My Courses
+                    </Link>
+                    <button onClick={handleSignOut} className="w-full text-left px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-red-600 hover:bg-red-50 transition-colors">
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
@@ -219,14 +270,17 @@ function CertificateModal({
 export default function CoursePlayerPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [currentModule, setCurrentModule] = useState(0);
   const [currentLesson, setCurrentLesson] = useState(0);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [showCertificate, setShowCertificate] = useState(false);
-  const [userName] = useState('John Doe'); // This would come from user auth
+  const userName = user?.email?.split('@')[0] ?? 'Learner';
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) { navigate(`/login?redirect=/course/${courseId}`); return; }
     if (!courseId) { navigate('/courses'); return; }
 
     const loadCourse = async () => {

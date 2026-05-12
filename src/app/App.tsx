@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
 import ServicesPage from "./pages/ServicesPage";
 import AboutPage from "./pages/AboutPage";
@@ -9,6 +10,7 @@ import CoursePlayerPage from "./pages/CoursePlayerPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import LoginPage from "./pages/LoginPage";
 import OpportunitiesPage from "./pages/OpportunitiesPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
 import OutsourcingPage from "./pages/OutsourcingPage";
@@ -16,6 +18,7 @@ import TrainingPage from "./pages/TrainingPage";
 
 export default function App() {
   return (
+    <AuthProvider>
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -26,6 +29,7 @@ export default function App() {
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/course/:courseId" element={<CoursePlayerPage />} />
         <Route path="/dashboard" element={<StudentDashboard />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/opportunities" element={<OpportunitiesPage />} />
@@ -34,5 +38,6 @@ export default function App() {
         <Route path="/training" element={<TrainingPage />} />
       </Routes>
     </Router>
+    </AuthProvider>
   );
 }

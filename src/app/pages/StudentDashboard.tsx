@@ -1,29 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import SiteHeader from '../components/SiteHeader';
 import coursesData from '../data/courseContent';
 import { progressTracker } from '../utils/progressTracking';
 import { downloadCertificate } from '../components/CertificateGenerator';
 
-// Header Component
-function Header() {
-  return (
-    <header className="fixed top-0 left-0 right-0 w-full bg-white z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          <Link to="/" className="h-16 w-32">
-            <img alt="CR8Careers Logo" className="h-full w-full object-contain" src="/logo.png" />
-          </Link>
-          <nav className="hidden md:flex gap-8 items-center">
-            <Link to="/" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Home</Link>
-            <Link to="/courses" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Courses</Link>
-            <Link to="/dashboard" className="font-['DM_Sans',sans-serif] text-[#0d9488] text-sm font-bold">Dashboard</Link>
-            <Link to="/contact" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Contact</Link>
-          </nav>
-        </div>
-      </div>
-    </header>
-  );
-}
 
 function StatsCard({ title, value, icon, color }: { 
   title: string; 
@@ -179,7 +160,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <SiteHeader />
       
       <div className="pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

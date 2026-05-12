@@ -1,35 +1,77 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
 import { fetchCourses, CourseRow } from "../../lib/courseService";
+import { useAuth } from "../context/AuthContext";
+import SiteHeader from "../components/SiteHeader";
 
 // Raster images using figma:asset scheme
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
 
 // Header Component
 function Header() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSignOut = async () => {
+    setDropdownOpen(false);
+    await signOut();
+    navigate('/');
+  };
+
+  const initial = user?.email?.[0].toUpperCase() ?? '';
+
   return (
     <header className="fixed top-0 left-0 right-0 w-full bg-white z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-36">
-          {/* Logo */}
-          <Link to="/" className="h-24 w-48">
+        <div className="flex items-center justify-between h-20">
+          <Link to="/" className="h-16 w-32">
             <img alt="CR8Careers Logo" className="h-full w-full object-contain" src="/logo.png" />
           </Link>
-
-          {/* Navigation */}
           <nav className="hidden md:flex gap-8 items-center">
             <Link to="/" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Home</Link>
-            <Link to="/services" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Services</Link>
-            <Link to="/about" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">About Us</Link>
-            <Link to="/contact" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Contact Us</Link>
-            <Link to="/insight-centre" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Insight Centre</Link>
+            <Link to="/courses" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Courses</Link>
+            <Link to="/contact" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm hover:text-[#ed2a10] transition-colors">Contact</Link>
           </nav>
-
-          {/* Take a Course Button */}
-          <Link to="/courses" className="bg-[#f58c21] hover:bg-[#e67e1a] transition-colors px-6 py-2.5 rounded-lg">
-            <p className="font-['DM_Sans',sans-serif] font-bold text-black text-sm tracking-tight">Take a Course</p>
-          </Link>
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(o => !o)}
+                  className="w-10 h-10 rounded-full bg-[#333333] text-white flex items-center justify-center font-['DM_Sans',sans-serif] font-bold text-sm hover:bg-[#555555] transition-colors"
+                  title={user.email ?? ''}
+                >
+                  {initial}
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="font-['DM_Sans',sans-serif] text-xs text-gray-400">Signed in as</p>
+                      <p className="font-['DM_Sans',sans-serif] text-sm font-semibold text-gray-800 truncate">{user.email}</p>
+                    </div>
+                    <Link to="/courses" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      My Courses
+                    </Link>
+                    <button onClick={handleSignOut} className="w-full text-left px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-red-600 hover:bg-red-50 transition-colors">
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
@@ -91,7 +133,7 @@ function Footer() {
   );
 }
 
-function CourseCard({ title, description, duration, level, price, category, courseId, thumbnailUrl }: {
+function CourseCard({ title, description, duration, level, price, category, courseId, thumbnailUrl, onStart }: {
   title: string;
   description: string;
   duration: string;
@@ -100,6 +142,7 @@ function CourseCard({ title, description, duration, level, price, category, cour
   category: string;
   courseId: string;
   thumbnailUrl?: string;
+  onStart: () => void;
 }) {
   const getCardStyles = () => {
     switch(category) {
@@ -214,14 +257,15 @@ function CourseCard({ title, description, duration, level, price, category, cour
           <div className={`font-['DM_Sans',sans-serif] font-bold text-2xl ${styles.titleColor}`}>
             {price}
           </div>
-          <Link to={`/course/${courseId}`}>
-            <button className={`${styles.buttonBg} text-white px-6 py-2 rounded-lg ${styles.buttonHover} transition-colors font-['DM_Sans',sans-serif] font-bold flex items-center gap-2`}>
-              Start Course
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="white" />
-              </svg>
-            </button>
-          </Link>
+          <button
+            onClick={onStart}
+            className={`${styles.buttonBg} text-white px-6 py-2 rounded-lg ${styles.buttonHover} transition-colors font-['DM_Sans',sans-serif] font-bold flex items-center gap-2`}
+          >
+            Start Course
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="white" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -238,6 +282,8 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -448,6 +494,13 @@ export default function CoursesPage() {
                 category={course.category}
                 courseId={course.id}
                 thumbnailUrl={course.thumbnail_url}
+                onStart={() => {
+                  if (user) {
+                    navigate(`/course/${course.id}`);
+                  } else {
+                    navigate(`/login?redirect=/course/${course.id}`);
+                  }
+                }}
               />
             ))}
           </div>

@@ -1,39 +1,11 @@
 import { Link } from "react-router-dom";
+import SiteHeader from "../components/SiteHeader";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
 
 // Raster images using figma:asset scheme
 import imgHappyBusinessColleaguesEnjoyingTeamSuccess1 from "figma:asset/dbde12ac83019448fd7d1c3b4f482b84dbf00a86.png";
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
 
-// Header Component
-function Header() {
-  return (
-    <header className="fixed top-0 left-0 right-0 w-full bg-white z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-36">
-          {/* Logo */}
-          <Link to="/" className="h-24 w-48">
-            <img alt="CR8Careers Logo" className="h-full w-full object-contain" src="/logo.png" />
-          </Link>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex gap-8 items-center">
-            <Link to="/" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm cursor-pointer hover:text-[#ed2a10] transition-colors">Home</Link>
-            <Link to="/services" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm cursor-pointer hover:text-[#ed2a10] transition-colors">Services</Link>
-            <p className="font-['DM_Sans',sans-serif] font-bold text-[#ed2a10] text-sm cursor-pointer">About Us</p>
-            <Link to="/contact" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm cursor-pointer hover:text-[#ed2a10] transition-colors">Contact Us</Link>
-            <Link to="/insight-centre" className="font-['DM_Sans',sans-serif] text-[#1d1d1d] text-sm cursor-pointer hover:text-[#ed2a10] transition-colors">Insight Centre</Link>
-          </nav>
-
-          {/* Take a Course Button */}
-          <Link to="/courses" className="bg-[#f58c21] hover:bg-[#e67e1a] transition-colors px-6 py-2.5 rounded-lg">
-            <p className="font-['DM_Sans',sans-serif] font-bold text-black text-sm tracking-tight">Take a Course</p>
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
 
 // Footer Component
 function Footer() {
@@ -130,7 +102,7 @@ function TimelineItem({ year, title, description }: { year: string; title: strin
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <SiteHeader activePage="about" />
       
       {/* Hero Section */}
       <section className="relative pt-32 lg:pt-40 pb-16 lg:pb-24 bg-gradient-to-br from-[#016e71] to-[#f58c21]">

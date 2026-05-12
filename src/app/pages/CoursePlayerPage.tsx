@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import coursesData, { Course, Module, Lesson } from '../data/courseContent';
+import { fetchCourses } from '../../lib/courseService';
 import { downloadCertificate, CertificatePreview } from '../components/CertificateGenerator';
 import { progressTracker } from '../utils/progressTracking';
 
@@ -187,45 +188,53 @@ export default function CoursePlayerPage() {
   const [userName] = useState('John Doe'); // This would come from user auth
 
   useEffect(() => {
-    if (courseId) {
-      const course = coursesData.find(c => c.id === courseId);
-      if (course) {
-        setCourse(course);
-        
-        // Check if user is enrolled
-        if (!progressTracker.isEnrolled(courseId)) {
-          progressTracker.enrollInCourse(courseId, course);
-        }
-        
-        // Load progress
-        const progress = progressTracker.getCourseProgress(courseId);
-        if (progress) {
-          setCompletedLessons(new Set(progress.completedLessons));
-          
-          // Set current lesson to last accessed or first lesson
-          if (progress.currentLesson) {
-            const foundModule = course.modules.find(module => 
-              module.lessons.some(lesson => lesson.id === progress.currentLesson)
-            );
-            if (foundModule) {
-              const moduleIndex = course.modules.indexOf(foundModule);
-              const lessonIndex = foundModule.lessons.findIndex(lesson => lesson.id === progress.currentLesson);
-              setCurrentModule(moduleIndex);
-              setCurrentLesson(lessonIndex);
-            }
-          }
-          
-          // Show certificate if course is completed
-          if (progress.completed) {
-            setShowCertificate(true);
-          }
-        }
+    if (!courseId) { navigate('/courses'); return; }
+
+    const loadCourse = async () => {
+      // Try Supabase first, fall back to static data
+      let found: Course | null = null;
+      const { data } = await fetchCourses();
+      const row = data.find(r => r.id === courseId);
+      if (row) {
+        found = {
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          duration: row.duration,
+          level: row.level,
+          price: row.price,
+          category: row.category,
+          instructor: row.instructor,
+          modules: row.modules ?? [],
+          thumbnailUrl: row.thumbnail_url ?? '',
+        };
       } else {
-        navigate('/courses');
+        found = coursesData.find(c => c.id === courseId) ?? null;
       }
-    } else {
-      navigate('/courses');
-    }
+
+      if (!found) { navigate('/courses'); return; }
+
+      setCourse(found);
+      if (!progressTracker.isEnrolled(courseId)) {
+        progressTracker.enrollInCourse(courseId, found);
+      }
+      const progress = progressTracker.getCourseProgress(courseId);
+      if (progress) {
+        setCompletedLessons(new Set(progress.completedLessons));
+        if (progress.currentLesson) {
+          const foundModule = found.modules.find(m =>
+            m.lessons.some(l => l.id === progress.currentLesson)
+          );
+          if (foundModule) {
+            setCurrentModule(found.modules.indexOf(foundModule));
+            setCurrentLesson(foundModule.lessons.findIndex(l => l.id === progress.currentLesson));
+          }
+        }
+        if (progress.completed) setShowCertificate(true);
+      }
+    };
+
+    loadCourse();
   }, [courseId, navigate]);
 
   const markLessonComplete = (lessonId: string) => {

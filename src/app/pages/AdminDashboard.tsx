@@ -591,57 +591,34 @@ function CourseCreationWizard({ onClose, onSave }: {
       {/* Header */}
       <div className="border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Breadcrumbs */}
-            <nav className="flex items-center gap-2 text-sm">
-              <button
-                onClick={handleBackToCourses}
-                className="text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7 7m0 0a7 7 0 00-14 0 7 7 0 0014 0z" />
-                </svg>
-                <span>Admin Dashboard</span>
-              </button>
-              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              <span className="text-gray-700 font-medium">Create New Course</span>
-            </nav>
-          </div>
+          <div></div>
           <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900">
             Create New Course
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
       </div>  
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-center mt-4 gap-0">
             {['Basic Info', 'Content', 'Review'].map((step, index) => (
               <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep > index + 1
-                    ? 'bg-green-500 text-white'
-                    : currentStep === index + 1
-                    ? 'bg-[#ed2a10] text-white'
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {currentStep > index + 1 ? '✓' : index + 1}
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${
+                    currentStep > index + 1
+                      ? 'bg-green-500 text-white'
+                      : currentStep === index + 1
+                      ? 'bg-[#ed2a10] text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {currentStep > index + 1 ? '✓' : index + 1}
+                  </div>
+                  <span className={`text-sm font-medium font-['DM_Sans',sans-serif] ${
+                    currentStep === index + 1 ? 'text-[#ed2a10]' : 'text-gray-600'
+                  }`}>
+                    {step}
+                  </span>
                 </div>
-                <span className={`ml-2 text-sm font-medium ${
-                  currentStep === index + 1 ? 'text-[#ed2a10]' : 'text-gray-600'
-                }`}>
-                  {step}
-                </span>
-                {index < 3 && (
-                  <div className={`w-16 h-1 mx-2 ${
+                {index < 2 && (
+                  <div className={`w-12 h-0.5 mx-3 ${
                     currentStep > index + 1 ? 'bg-green-500' : 'bg-gray-200'
                   }`} />
                 )}
@@ -1976,22 +1953,6 @@ export default function AdminDashboard() {
           {/* Course Creation Screen */}
           {activeSection === 'courses' && showCourseWizard && (
             <div className="p-6">
-              {/* Breadcrumbs */}
-              <nav className="flex items-center gap-2 text-sm mb-6">
-                <button
-                  onClick={() => setShowCourseWizard(false)}
-                  className="text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  <span>Courses</span>
-                </button>
-                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="text-gray-700 font-medium">Create New Course</span>
-              </nav>
 
               <CourseCreationWizard
                 onClose={() => setShowCourseWizard(false)}

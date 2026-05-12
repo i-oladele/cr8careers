@@ -1703,7 +1703,15 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ message, type });
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  };
 
   // Check if user is admin
   useEffect(() => {
@@ -1748,15 +1756,19 @@ export default function AdminDashboard() {
     try {
       if (editingCourse) {
         const { error } = await updateCourse(payload);
-        if (error) return error;
+        if (error) { showToast(error, 'error'); return error; }
         setCourses(prev => prev.map(c => c.id === savedCourse.id ? savedCourse : c));
+        showToast('Course updated successfully.', 'success');
       } else {
         const { error } = await saveCourse(payload);
-        if (error) return error;
+        if (error) { showToast(error, 'error'); return error; }
         setCourses(prev => [savedCourse, ...prev]);
+        showToast('Course created successfully.', 'success');
       }
     } catch (e: any) {
-      return e?.message ?? 'Something went wrong. Please try again.';
+      const msg = e?.message ?? 'Something went wrong. Please try again.';
+      showToast(msg, 'error');
+      return msg;
     }
     setEditingCourse(null);
     setShowCourseWizard(false);
@@ -1776,6 +1788,23 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-4 rounded-xl shadow-lg font-['DM_Sans',sans-serif] text-sm font-medium transition-all ${
+          toast.type === 'success' ? 'bg-[#0d9488] text-white' : 'bg-[#ed2a10] text-white'
+        }`}>
+          {toast.type === 'success' ? (
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          ) : (
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          )}
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 opacity-75 hover:opacity-100">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+
       <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
       
       {/* Main Content */}

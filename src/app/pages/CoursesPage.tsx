@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
-import coursesData from "../data/courseContent";
+import { fetchCourses, CourseRow } from "../../lib/courseService";
 
 // Raster images using figma:asset scheme
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
@@ -228,6 +228,8 @@ export default function CoursesPage() {
   const [selectedDuration, setSelectedDuration] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('All');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [courses, setCourses] = useState<CourseRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -237,20 +239,17 @@ export default function CoursesPage() {
         setShowFilterDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  
-  const courses = coursesData.map(course => ({
-    title: course.title,
-    description: course.description,
-    duration: course.duration,
-    level: course.level,
-    price: course.price,
-    category: course.category,
-    courseId: course.id
-  }));
+
+  // Fetch courses from Supabase
+  useEffect(() => {
+    fetchCourses().then(({ data, error }) => {
+      if (!error) setCourses(data);
+      setLoading(false);
+    });
+  }, []);
 
   const filteredCourses = courses.filter(course => {
     const matchesCategory = selectedCategory === 'All Courses' || course.category === selectedCategory;
@@ -429,16 +428,18 @@ export default function CoursesPage() {
       <section className="py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCourses.map((course, index) => (
+            {loading ? (
+              <div className="col-span-3 text-center py-16 font-['DM_Sans',sans-serif] text-gray-500">Loading courses...</div>
+            ) : filteredCourses.map((course, index) => (
               <CourseCard
-                key={index}
+                key={course.id ?? index}
                 title={course.title}
                 description={course.description}
                 duration={course.duration}
                 level={course.level}
                 price={course.price}
                 category={course.category}
-                courseId={course.courseId}
+                courseId={course.id}
               />
             ))}
           </div>

@@ -1,6 +1,14 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import coursesData, { Course, Module, Lesson } from '../data/courseContent';
+import {
+  Undo2, Redo2, Bold, Italic, Underline, Strikethrough,
+  Heading1, Heading2, Heading3, Pilcrow,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  List, ListOrdered, IndentIncrease, IndentDecrease,
+  Quote, Code, Minus, Link2, Palette, Highlighter, Eraser, Paperclip, X, GripVertical, ChevronDown,
+} from 'lucide-react';
+import coursesData, { Course, Module, Lesson, QuizQuestion, QuizOption } from '../data/courseContent';
+import { saveCourse, fetchCourses } from '../../lib/courseService';
 import { progressTracker } from '../utils/progressTracking';
 
 // Types
@@ -94,12 +102,366 @@ function Sidebar({ activeSection, setActiveSection }: {
   );
 }
 
+function QuizBuilder({ questions, onChange }: { questions: QuizQuestion[]; onChange: (qs: QuizQuestion[]) => void }) {
+  const newQuestion = (): QuizQuestion => ({
+    id: 'q-' + Date.now() + Math.random(),
+    question: '',
+    type: 'single',
+    options: [
+      { id: 'o-' + Date.now() + '0', text: '' },
+      { id: 'o-' + Date.now() + '1', text: '' },
+    ],
+    correctAnswers: [],
+  });
+
+  const updateQuestion = (qId: string, patch: Partial<QuizQuestion>) => {
+    onChange(questions.map(q => q.id === qId ? { ...q, ...patch } : q));
+  };
+
+  const addOption = (qId: string) => {
+    onChange(questions.map(q => q.id === qId
+      ? { ...q, options: [...q.options, { id: 'o-' + Date.now(), text: '' }] }
+      : q
+    ));
+  };
+
+  const updateOption = (qId: string, oId: string, text: string) => {
+    onChange(questions.map(q => q.id === qId
+      ? { ...q, options: q.options.map(o => o.id === oId ? { ...o, text } : o) }
+      : q
+    ));
+  };
+
+  const removeOption = (qId: string, oId: string) => {
+    onChange(questions.map(q => q.id === qId
+      ? { ...q, options: q.options.filter(o => o.id !== oId), correctAnswers: q.correctAnswers.filter(a => a !== oId) }
+      : q
+    ));
+  };
+
+  const toggleCorrect = (q: QuizQuestion, oId: string) => {
+    let next: string[];
+    if (q.type === 'single') {
+      next = [oId];
+    } else {
+      next = q.correctAnswers.includes(oId)
+        ? q.correctAnswers.filter(a => a !== oId)
+        : [...q.correctAnswers, oId];
+    }
+    updateQuestion(q.id, { correctAnswers: next });
+  };
+
+  return (
+    <div className="space-y-3">
+      {questions.length === 0 && (
+        <p className="text-sm text-gray-400 font-['DM_Sans',sans-serif] text-center py-3">No questions yet. Add your first question.</p>
+      )}
+      {questions.map((q, qi) => (
+        <div key={q.id} className="border border-gray-200 rounded-lg p-3 bg-white space-y-3">
+          {/* Question header */}
+          <div className="flex items-start gap-2">
+            <span className="text-xs font-semibold text-gray-500 mt-2.5 shrink-0 font-['DM_Sans',sans-serif]">Q{qi + 1}</span>
+            <input
+              type="text"
+              value={q.question}
+              onChange={(e) => updateQuestion(q.id, { question: e.target.value })}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-['DM_Sans',sans-serif] focus:outline-none focus:ring-1 focus:ring-gray-400"
+              placeholder="Enter your question..."
+            />
+            <button onClick={() => onChange(questions.filter(x => x.id !== q.id))} className="text-red-500 hover:text-red-700 p-1 mt-1 shrink-0"><X size={15} /></button>
+          </div>
+
+          {/* Answer type toggle */}
+          <div className="flex items-center gap-3 pl-6">
+            <span className="text-xs text-gray-500 font-['DM_Sans',sans-serif]">Answer type:</span>
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-['DM_Sans',sans-serif]">
+              <input
+                type="radio"
+                checked={q.type === 'single'}
+                onChange={() => updateQuestion(q.id, { type: 'single', correctAnswers: [] })}
+                className="accent-[#ed2a10]"
+              />
+              Single choice
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-['DM_Sans',sans-serif]">
+              <input
+                type="radio"
+                checked={q.type === 'multi'}
+                onChange={() => updateQuestion(q.id, { type: 'multi', correctAnswers: [] })}
+                className="accent-[#ed2a10]"
+              />
+              Multiple choice
+            </label>
+          </div>
+
+          {/* Options */}
+          <div className="space-y-2 pl-6">
+            <p className="text-xs text-gray-400 font-['DM_Sans',sans-serif]">
+              {q.type === 'single' ? 'Select the correct answer' : 'Select all correct answers'}
+            </p>
+            {q.options.map((o, oi) => {
+              const isCorrect = q.correctAnswers.includes(o.id);
+              return (
+                <div key={o.id} className="flex items-center gap-2">
+                  {q.type === 'single' ? (
+                    <input type="radio" checked={isCorrect} onChange={() => toggleCorrect(q, o.id)} className="accent-[#ed2a10] shrink-0" title="Mark as correct answer" />
+                  ) : (
+                    <input type="checkbox" checked={isCorrect} onChange={() => toggleCorrect(q, o.id)} className="accent-[#ed2a10] shrink-0" title="Mark as correct answer" />
+                  )}
+                  <input
+                    type="text"
+                    value={o.text}
+                    onChange={(e) => updateOption(q.id, o.id, e.target.value)}
+                    className={`flex-1 border rounded-lg px-3 py-1.5 text-sm font-['DM_Sans',sans-serif] focus:outline-none focus:ring-1 focus:ring-gray-400 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                    placeholder={`Option ${oi + 1}`}
+                  />
+                  {q.options.length > 2 && (
+                    <button onClick={() => removeOption(q.id, o.id)} className="text-gray-400 hover:text-red-500 shrink-0"><X size={13} /></button>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              onClick={() => addOption(q.id)}
+              className="text-xs text-gray-500 hover:text-gray-700 font-['DM_Sans',sans-serif] flex items-center gap-1 mt-1"
+            >
+              + Add option
+            </button>
+          </div>
+        </div>
+      ))}
+      <button
+        onClick={() => onChange([...questions, newQuestion()])}
+        className="w-full border-2 border-dashed border-gray-300 rounded-lg py-2.5 text-sm text-gray-500 hover:border-[#ed2a10] hover:text-[#ed2a10] transition-colors font-['DM_Sans',sans-serif] font-medium"
+      >
+        + Add Question
+      </button>
+    </div>
+  );
+}
+
+function RichTextEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [floatingToolbar, setFloatingToolbar] = useState<{ top: number; left: number } | null>(null);
+  const [isEmpty, setIsEmpty] = useState(!value);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const fontColorRef = useRef<HTMLInputElement>(null);
+  const highlightRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = value || '';
+      setIsEmpty(!value);
+    }
+  }, []);
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+      setIsEmpty(editorRef.current.innerText.trim() === '');
+    }
+  };
+
+  const checkSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0 && editorRef.current) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const editorRect = editorRef.current.getBoundingClientRect();
+      setFloatingToolbar({
+        top: rect.top - editorRect.top - 46,
+        left: Math.max(80, Math.min(rect.left - editorRect.left + rect.width / 2, editorRect.width - 80)),
+      });
+    } else {
+      setFloatingToolbar(null);
+    }
+  };
+
+  const exec = (command: string, val?: string) => {
+    document.execCommand(command, false, val);
+    editorRef.current?.focus();
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  };
+
+  const insertLink = () => {
+    if (!linkUrl) return;
+    const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
+    exec('createLink', url);
+    setLinkUrl('');
+    setShowLinkInput(false);
+  };
+
+  const Sep = () => <div className="w-px h-5 bg-gray-300 mx-0.5 shrink-0" />;
+
+  const Btn = ({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) => (
+    <button
+      onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+      title={title}
+      className="p-1.5 rounded hover:bg-gray-200 text-gray-700 transition-colors flex items-center justify-center shrink-0"
+    >
+      {children}
+    </button>
+  );
+
+  return (
+    <div className="border border-gray-300 rounded-lg font-['DM_Sans',sans-serif]">
+      {/* Toolbar */}
+      <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+
+        {/* History */}
+        <Btn title="Undo" onClick={() => exec('undo')}><Undo2 size={14} /></Btn>
+        <Btn title="Redo" onClick={() => exec('redo')}><Redo2 size={14} /></Btn>
+        <Sep />
+
+        {/* Text style */}
+        <Btn title="Bold" onClick={() => exec('bold')}><Bold size={14} /></Btn>
+        <Btn title="Italic" onClick={() => exec('italic')}><Italic size={14} /></Btn>
+        <Btn title="Underline" onClick={() => exec('underline')}><Underline size={14} /></Btn>
+        <Btn title="Strikethrough" onClick={() => exec('strikeThrough')}><Strikethrough size={14} /></Btn>
+        <Btn title="Subscript" onClick={() => exec('subscript')}><span className="text-xs font-medium leading-none">x<sub>2</sub></span></Btn>
+        <Btn title="Superscript" onClick={() => exec('superscript')}><span className="text-xs font-medium leading-none">x<sup>2</sup></span></Btn>
+        <Sep />
+
+        {/* Font size */}
+        <select
+          onMouseDown={(e) => e.stopPropagation()}
+          onChange={(e) => { exec('fontSize', e.target.value); (e.target as HTMLSelectElement).value = ''; }}
+          defaultValue=""
+          title="Font size"
+          className="text-xs border border-gray-300 rounded px-1 py-1 bg-white text-gray-700 cursor-pointer h-7"
+        >
+          <option value="" disabled>Size</option>
+          <option value="1">Small</option>
+          <option value="3">Normal</option>
+          <option value="4">Large</option>
+          <option value="5">X-Large</option>
+          <option value="6">XX-Large</option>
+        </select>
+        <Sep />
+
+        {/* Headings */}
+        <Btn title="Heading 1" onClick={() => exec('formatBlock', 'h1')}><Heading1 size={14} /></Btn>
+        <Btn title="Heading 2" onClick={() => exec('formatBlock', 'h2')}><Heading2 size={14} /></Btn>
+        <Btn title="Heading 3" onClick={() => exec('formatBlock', 'h3')}><Heading3 size={14} /></Btn>
+        <Btn title="Paragraph" onClick={() => exec('formatBlock', 'p')}><Pilcrow size={14} /></Btn>
+        <Sep />
+
+        {/* Alignment */}
+        <Btn title="Align left" onClick={() => exec('justifyLeft')}><AlignLeft size={14} /></Btn>
+        <Btn title="Align center" onClick={() => exec('justifyCenter')}><AlignCenter size={14} /></Btn>
+        <Btn title="Align right" onClick={() => exec('justifyRight')}><AlignRight size={14} /></Btn>
+        <Btn title="Justify" onClick={() => exec('justifyFull')}><AlignJustify size={14} /></Btn>
+        <Sep />
+
+        {/* Lists & indent */}
+        <Btn title="Bullet list" onClick={() => exec('insertUnorderedList')}><List size={14} /></Btn>
+        <Btn title="Numbered list" onClick={() => exec('insertOrderedList')}><ListOrdered size={14} /></Btn>
+        <Btn title="Indent" onClick={() => exec('indent')}><IndentIncrease size={14} /></Btn>
+        <Btn title="Outdent" onClick={() => exec('outdent')}><IndentDecrease size={14} /></Btn>
+        <Sep />
+
+        {/* Blocks */}
+        <Btn title="Blockquote" onClick={() => exec('formatBlock', 'blockquote')}><Quote size={14} /></Btn>
+        <Btn title="Code block" onClick={() => exec('formatBlock', 'pre')}><Code size={14} /></Btn>
+        <Btn title="Horizontal rule" onClick={() => exec('insertHorizontalRule')}><Minus size={14} /></Btn>
+        <Sep />
+
+        {/* Link */}
+        <div className="relative">
+          <Btn title="Insert link" onClick={() => setShowLinkInput(v => !v)}><Link2 size={14} /></Btn>
+          {showLinkInput && (
+            <div className="absolute top-9 left-0 z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-2 flex gap-2 items-center min-w-[230px]">
+              <input
+                autoFocus
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') insertLink(); if (e.key === 'Escape') setShowLinkInput(false); }}
+                placeholder="https://..."
+                className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+              />
+              <button onClick={insertLink} className="bg-[#ed2a10] text-white px-2 py-1 rounded text-sm hover:bg-[#d42610] shrink-0">Add</button>
+            </div>
+          )}
+        </div>
+        <Sep />
+
+        {/* Color */}
+        <label title="Font color" className="p-1.5 rounded hover:bg-gray-200 cursor-pointer flex items-center justify-center relative" onMouseDown={(e) => e.preventDefault()}>
+          <Palette size={14} className="text-gray-700" />
+          <input ref={fontColorRef} type="color" className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" onChange={(e) => exec('foreColor', e.target.value)} />
+        </label>
+        <label title="Highlight color" className="p-1.5 rounded hover:bg-gray-200 cursor-pointer flex items-center justify-center relative" onMouseDown={(e) => e.preventDefault()}>
+          <Highlighter size={14} className="text-gray-700" />
+          <input ref={highlightRef} type="color" className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" onChange={(e) => exec('hiliteColor', e.target.value)} />
+        </label>
+        <Sep />
+
+        {/* Clear */}
+        <Btn title="Clear formatting" onClick={() => exec('removeFormat')}><Eraser size={14} /></Btn>
+      </div>
+
+      {/* Editor area */}
+      <div className="relative">
+        {floatingToolbar && (
+          <div
+            style={{ top: floatingToolbar.top, left: floatingToolbar.left, transform: 'translateX(-50%)' }}
+            className="absolute z-50 bg-gray-900 rounded-lg shadow-xl flex items-center gap-0.5 px-1.5 py-1"
+          >
+            {([
+              { cmd: 'bold', icon: <Bold size={13} /> },
+              { cmd: 'italic', icon: <Italic size={13} /> },
+              { cmd: 'underline', icon: <Underline size={13} /> },
+              { cmd: 'strikeThrough', icon: <Strikethrough size={13} /> },
+            ] as { cmd: string; icon: React.ReactNode }[]).map(({ cmd, icon }) => (
+              <button key={cmd} onMouseDown={(e) => { e.preventDefault(); exec(cmd); }} className="p-1.5 rounded hover:bg-gray-700 text-white transition-colors">{icon}</button>
+            ))}
+            <div className="w-px h-4 bg-gray-600 mx-0.5" />
+            {([
+              { cmd: 'insertUnorderedList', icon: <List size={13} /> },
+              { cmd: 'insertOrderedList', icon: <ListOrdered size={13} /> },
+            ] as { cmd: string; icon: React.ReactNode }[]).map(({ cmd, icon }) => (
+              <button key={cmd} onMouseDown={(e) => { e.preventDefault(); exec(cmd); }} className="p-1.5 rounded hover:bg-gray-700 text-white transition-colors">{icon}</button>
+            ))}
+          </div>
+        )}
+        {isEmpty && (
+          <span className="absolute top-2 left-3 text-gray-400 text-sm pointer-events-none select-none">
+            Write lesson content here...
+          </span>
+        )}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onMouseUp={checkSelection}
+          onKeyUp={checkSelection}
+          onBlur={() => setTimeout(() => setFloatingToolbar(null), 150)}
+          className="w-full px-3 py-2 min-h-[140px] focus:outline-none
+            [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_s]:line-through
+            [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:my-2
+            [&_h2]:text-xl [&_h2]:font-bold [&_h2]:my-1.5
+            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:my-1
+            [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1
+            [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1
+            [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-2
+            [&_pre]:bg-gray-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-sm [&_pre]:my-1 [&_pre]:whitespace-pre-wrap
+            [&_a]:text-blue-600 [&_a]:underline
+            [&_hr]:border-gray-300 [&_hr]:my-2"
+        />
+      </div>
+    </div>
+  );
+}
+
 // Course Creation Wizard Component
 function CourseCreationWizard({ onClose, onSave }: { 
   onClose: () => void; 
   onSave: (course: Course) => void;
 }) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isFree, setIsFree] = useState(false);
   const [courseData, setCourseData] = useState<CourseFormData>({
     title: '',
     description: '',
@@ -112,6 +474,10 @@ function CourseCreationWizard({ onClose, onSave }: {
   const [modules, setModules] = useState<Module[]>([]);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [lessonFiles, setLessonFiles] = useState<Record<string, File>>({});
+  const [draggingLessonId, setDraggingLessonId] = useState<string | null>(null);
+  const [openModules, setOpenModules] = useState<Set<string>>(new Set());
+  const dragLesson = useRef<{ moduleId: string; lessonId: string } | null>(null);
   const [currentLesson, setCurrentLesson] = useState<Lesson>({
     id: '',
     title: '',
@@ -120,7 +486,7 @@ function CourseCreationWizard({ onClose, onSave }: {
     type: 'text'
   });
 
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   // Handle navigation back to courses list
   const handleBackToCourses = () => {
@@ -134,6 +500,7 @@ function CourseCreationWizard({ onClose, onSave }: {
       category: 'Leadership',
       instructor: ''
     });
+    setIsFree(false);
     setModules([]);
     setSelectedModule(null);
     setUploadedFiles([]);
@@ -163,21 +530,34 @@ function CourseCreationWizard({ onClose, onSave }: {
     setSelectedModule(newModule);
   };
 
-  const addLesson = () => {
-    if (!selectedModule) return;
+  const addLesson = (mod?: Module) => {
+    const target = mod ?? selectedModule;
+    if (!target) return;
     const newLesson: Lesson = {
       id: 'lesson-' + Date.now(),
-      title: `Lesson ${selectedModule.lessons.length + 1}`,
+      title: `Lesson ${target.lessons.length + 1}`,
       content: '',
       duration: '',
       type: 'text'
     };
-    const updatedModule = {
-      ...selectedModule,
-      lessons: [...selectedModule.lessons, newLesson]
-    };
+    const updatedModule = { ...target, lessons: [...target.lessons, newLesson] };
     setSelectedModule(updatedModule);
-    setModules(modules.map(m => m.id === selectedModule.id ? updatedModule : m));
+    setModules(modules.map(m => m.id === target.id ? updatedModule : m));
+  };
+
+  const addQuiz = (mod?: Module) => {
+    const target = mod ?? selectedModule;
+    if (!target) return;
+    const newLesson: Lesson = {
+      id: 'lesson-' + Date.now(),
+      title: `Quiz ${target.lessons.filter(l => l.type === 'quiz').length + 1}`,
+      content: '',
+      duration: '',
+      type: 'quiz'
+    };
+    const updatedModule = { ...target, lessons: [...target.lessons, newLesson] };
+    setSelectedModule(updatedModule);
+    setModules(modules.map(m => m.id === target.id ? updatedModule : m));
     setCurrentLesson(newLesson);
   };
 
@@ -244,7 +624,7 @@ function CourseCreationWizard({ onClose, onSave }: {
       </div>  
           {/* Progress Steps */}
           <div className="flex items-center justify-between mt-4">
-            {['Basic Info', 'Modules', 'Content', 'Review'].map((step, index) => (
+            {['Basic Info', 'Content', 'Review'].map((step, index) => (
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   currentStep > index + 1
@@ -353,17 +733,39 @@ function CourseCreationWizard({ onClose, onSave }: {
                 </div>
                 
                 <div>
-                  <label className="block font-['DM_Sans',sans-serif] font-medium text-gray-700 mb-2">
-                    Price *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={courseData.price}
-                    onChange={(e) => setCourseData({...courseData, price: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif]"
-                    placeholder="e.g., ₦75,000"
-                  />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-['DM_Sans',sans-serif] font-medium text-gray-700">
+                      Price {!isFree && '*'}
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <span className="font-['DM_Sans',sans-serif] text-sm text-gray-600">Free</span>
+                      <div
+                        onClick={() => {
+                          setIsFree(!isFree);
+                          if (!isFree) setCourseData({...courseData, price: 'Free'});
+                          else setCourseData({...courseData, price: ''});
+                        }}
+                        className={`relative w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer ${isFree ? 'bg-green-500' : 'bg-gray-300'}`}
+                      >
+                        <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${isFree ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </div>
+                    </label>
+                  </div>
+                  <div className={`flex items-center border rounded-lg overflow-hidden transition-colors ${isFree ? 'border-gray-200 bg-gray-100' : 'border-gray-300 bg-white'}`}>
+                    <span className={`px-3 py-2 font-['DM_Sans',sans-serif] font-medium border-r select-none ${isFree ? 'border-gray-200 text-gray-400 bg-gray-100' : 'border-gray-300 text-gray-500 bg-gray-50'}`}>₦</span>
+                    <input
+                      type="text"
+                      required={!isFree}
+                      disabled={isFree}
+                      value={isFree ? 'Free' : courseData.price}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^\d,]/g, '');
+                        setCourseData({...courseData, price: raw});
+                      }}
+                      className={`flex-1 px-3 py-2 font-['DM_Sans',sans-serif] focus:outline-none bg-transparent ${isFree ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'}`}
+                      placeholder="75,000"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -388,12 +790,12 @@ function CourseCreationWizard({ onClose, onSave }: {
             </div>
           )}
 
-          {/* Step 2: Modules */}
+          {/* Step 2: Content (Modules + Lessons) */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-['DM_Sans',sans-serif] font-semibold text-lg">
-                  Course Modules
+                  Content
                 </h3>
                 <button
                   onClick={addModule}
@@ -419,7 +821,7 @@ function CourseCreationWizard({ onClose, onSave }: {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {modules.map((module, index) => (
                     <div key={module.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -427,10 +829,16 @@ function CourseCreationWizard({ onClose, onSave }: {
                           Module {index + 1}
                         </h4>
                         <button
-                          onClick={() => setSelectedModule(module)}
-                          className="text-[#ed2a10] hover:text-[#d42610] font-['DM_Sans',sans-serif] font-medium text-sm"
+                          onClick={() => {
+                            setModules(modules.filter(m => m.id !== module.id));
+                            if (selectedModule?.id === module.id) setSelectedModule(null);
+                          }}
+                          className="text-red-500 hover:text-red-700 transition-colors p-1"
+                          title="Delete module"
                         >
-                          Edit
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                          </svg>
                         </button>
                       </div>
                       <input
@@ -439,9 +847,7 @@ function CourseCreationWizard({ onClose, onSave }: {
                         onChange={(e) => {
                           const updatedModule = { ...module, title: e.target.value };
                           setModules(modules.map(m => m.id === module.id ? updatedModule : m));
-                          if (selectedModule?.id === module.id) {
-                            setSelectedModule(updatedModule);
-                          }
+                          if (selectedModule?.id === module.id) setSelectedModule(updatedModule);
                         }}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif] mb-2"
                         placeholder="Module title"
@@ -451,154 +857,235 @@ function CourseCreationWizard({ onClose, onSave }: {
                         onChange={(e) => {
                           const updatedModule = { ...module, description: e.target.value };
                           setModules(modules.map(m => m.id === module.id ? updatedModule : m));
-                          if (selectedModule?.id === module.id) {
-                            setSelectedModule(updatedModule);
-                          }
+                          if (selectedModule?.id === module.id) setSelectedModule(updatedModule);
                         }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif]"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif] mb-3"
                         rows={2}
                         placeholder="Module description"
                       />
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-sm text-gray-600 font-['DM_Sans',sans-serif]">
-                          {module.lessons.length} lessons
-                        </span>
-                        <button
-                          onClick={() => {
-                            setSelectedModule(module);
-                            addLesson();
-                          }}
-                          className="text-[#0d9488] hover:text-[#0a7a70] font-['DM_Sans',sans-serif] font-medium text-sm"
-                        >
-                          Add Lesson
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Step 3: Content */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <h3 className="font-['DM_Sans',sans-serif] font-semibold text-lg mb-4">
-                Lesson Content
-              </h3>
-              
-              {modules.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                  <p className="font-['DM_Sans',sans-serif] text-gray-600">
-                    Please add modules first before adding content.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {modules.map((module, moduleIndex) => (
-                    <div key={module.id} className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-['DM_Sans',sans-serif] font-medium text-gray-900 mb-3">
-                        {module.title}
-                      </h4>
-                      
+                      {/* Lessons */}
                       {module.lessons.length === 0 ? (
                         <div className="text-center py-6 bg-gray-50 rounded">
                           <p className="font-['DM_Sans',sans-serif] text-gray-600 text-sm mb-3">
                             No lessons in this module
                           </p>
-                          <button
-                            onClick={() => {
-                              setSelectedModule(module);
-                              addLesson();
-                            }}
-                            className="bg-[#0d9488] text-white px-4 py-2 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-medium text-sm"
-                          >
-                            Add First Lesson
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => { setSelectedModule(module); addLesson(module); }}
+                              className="bg-[#0d9488] text-white px-4 py-2 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-medium text-sm"
+                            >
+                              Add First Lesson
+                            </button>
+                            <button
+                              onClick={() => { setSelectedModule(module); addQuiz(module); }}
+                              className="bg-[#ed2a10] text-white px-4 py-2 rounded-lg hover:bg-[#d42610] transition-colors font-['DM_Sans',sans-serif] font-medium text-sm"
+                            >
+                              Add Quiz
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-3">
                           {module.lessons.map((lesson, lessonIndex) => (
-                            <div key={lesson.id} className="bg-gray-50 rounded-lg p-3">
+                            <div
+                              key={lesson.id}
+                              draggable
+                              onDragStart={() => {
+                                dragLesson.current = { moduleId: module.id, lessonId: lesson.id };
+                                setDraggingLessonId(lesson.id);
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                if (!dragLesson.current) return;
+                                if (dragLesson.current.moduleId !== module.id) return;
+                                if (dragLesson.current.lessonId === lesson.id) return;
+                                const currentModule = modules.find(m => m.id === module.id)!;
+                                const fromIdx = currentModule.lessons.findIndex(l => l.id === dragLesson.current!.lessonId);
+                                const toIdx = currentModule.lessons.findIndex(l => l.id === lesson.id);
+                                if (fromIdx === toIdx) return;
+                                const reordered = [...currentModule.lessons];
+                                reordered.splice(toIdx, 0, reordered.splice(fromIdx, 1)[0]);
+                                setModules(modules.map(m => m.id === module.id ? { ...m, lessons: reordered } : m));
+                              }}
+                              onDragEnd={() => {
+                                dragLesson.current = null;
+                                setDraggingLessonId(null);
+                              }}
+                              className={`bg-gray-50 rounded-lg p-3 transition-opacity ${draggingLessonId === lesson.id ? 'opacity-40' : 'opacity-100'}`}
+                            >
                               <div className="flex items-center justify-between mb-2">
-                                <h5 className="font-['DM_Sans',sans-serif] font-medium text-gray-900">
-                                  Lesson {lessonIndex + 1}
+                                <h5 className="font-['DM_Sans',sans-serif] font-medium text-gray-900 flex items-center gap-2">
+                                  <GripVertical size={14} className="text-gray-400 cursor-grab shrink-0" />
+                                  {lesson.type === 'quiz' ? (
+                                    <>
+                                      Quiz {module.lessons.filter((l, i) => l.type === 'quiz' && i <= lessonIndex).length}
+                                      <span className="text-xs bg-[#ed2a10] text-white px-1.5 py-0.5 rounded font-normal">Quiz</span>
+                                    </>
+                                  ) : (
+                                    `Lesson ${module.lessons.filter((l, i) => l.type !== 'quiz' && i <= lessonIndex).length}`
+                                  )}
                                 </h5>
-                                <select
-                                  value={lesson.type}
-                                  onChange={(e) => {
-                                    const updatedLesson = { ...lesson, type: e.target.value as any };
-                                    const updatedModule = {
-                                      ...module,
-                                      lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l)
-                                    };
-                                    setModules(modules.map(m => m.id === module.id ? updatedModule : m));
-                                  }}
-                                  className="text-sm border border-gray-300 rounded px-2 py-1 font-['DM_Sans',sans-serif]"
-                                >
-                                  <option value="text">Text</option>
-                                  <option value="video">Video</option>
-                                  <option value="quiz">Quiz</option>
-                                  <option value="assignment">Assignment</option>
-                                </select>
+                                <div className="flex items-center gap-2">
+                                  {lesson.type !== 'quiz' && (
+                                  <select
+                                    value={lesson.type}
+                                    onChange={(e) => {
+                                      const updatedLesson = { ...lesson, type: e.target.value as any };
+                                      const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
+                                      setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                    }}
+                                    className="text-sm border border-gray-300 rounded px-2 py-1 font-['DM_Sans',sans-serif]"
+                                  >
+                                    <option value="text">Text</option>
+                                    <option value="video">Video</option>
+                                  </select>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      const updatedModule = { ...module, lessons: module.lessons.filter(l => l.id !== lesson.id) };
+                                      setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                    }}
+                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                    title="Delete lesson"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                                    </svg>
+                                  </button>
+                                </div>
                               </div>
-                              
                               <input
                                 type="text"
                                 value={lesson.title}
                                 onChange={(e) => {
                                   const updatedLesson = { ...lesson, title: e.target.value };
-                                  const updatedModule = {
-                                    ...module,
-                                    lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l)
-                                  };
+                                  const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
                                   setModules(modules.map(m => m.id === module.id ? updatedModule : m));
                                 }}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif] mb-2"
                                 placeholder="Lesson title"
                               />
-                              
-                              <input
-                                type="text"
-                                value={lesson.duration}
-                                onChange={(e) => {
-                                  const updatedLesson = { ...lesson, duration: e.target.value };
-                                  const updatedModule = {
-                                    ...module,
-                                    lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l)
-                                  };
-                                  setModules(modules.map(m => m.id === module.id ? updatedModule : m));
-                                }}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif] mb-2"
-                                placeholder="Duration (e.g., 15 min)"
-                              />
-                              
-                              <textarea
-                                value={lesson.content}
-                                onChange={(e) => {
-                                  const updatedLesson = { ...lesson, content: e.target.value };
-                                  const updatedModule = {
-                                    ...module,
-                                    lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l)
-                                  };
-                                  setModules(modules.map(m => m.id === module.id ? updatedModule : m));
-                                }}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif]"
-                                rows={3}
-                                placeholder="Lesson content (supports markdown)"
-                              />
+                              {lesson.type === 'quiz' ? (
+                                <QuizBuilder
+                                  questions={lesson.quizQuestions || []}
+                                  onChange={(qs) => {
+                                    const updatedLesson = { ...lesson, quizQuestions: qs };
+                                    const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
+                                    setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                  }}
+                                />
+                              ) : lesson.type === 'video' ? (
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">YouTube URL</label>
+                                    <input
+                                      type="url"
+                                      value={lesson.videoUrl || ''}
+                                      onChange={(e) => {
+                                        const updatedLesson = { ...lesson, videoUrl: e.target.value };
+                                        const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
+                                        setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                      }}
+                                      className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif] text-sm"
+                                      placeholder="https://www.youtube.com/watch?v=..."
+                                    />
+                                    {lesson.videoUrl && (() => {
+                                      const match = lesson.videoUrl.match(/(?:v=|youtu\.be\/)([^&\s]+)/);
+                                      return match ? (
+                                        <div className="mt-2 rounded-lg overflow-hidden aspect-video bg-black">
+                                          <iframe
+                                            src={`https://www.youtube.com/embed/${match[1]}`}
+                                            className="w-full h-full"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                          />
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Video Description</label>
+                                    <textarea
+                                      value={lesson.videoDescription || ''}
+                                      onChange={(e) => {
+                                        const updatedLesson = { ...lesson, videoDescription: e.target.value };
+                                        const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
+                                        setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                      }}
+                                      className="w-full border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif] text-sm"
+                                      rows={3}
+                                      placeholder="Describe what learners will get from this video..."
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <RichTextEditor
+                                  value={lesson.content}
+                                  onChange={(html) => {
+                                    const updatedLesson = { ...lesson, content: html };
+                                    const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
+                                    setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                  }}
+                                />
+                              )}
+
+                              {/* File attachment */}
+                              <div className="mt-2">
+                                {lessonFiles[lesson.id] || lesson.attachedFileName ? (
+                                  <div className="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                    <Paperclip size={14} className="text-gray-500 shrink-0" />
+                                    <span className="flex-1 truncate text-gray-700 font-['DM_Sans',sans-serif]">
+                                      {lessonFiles[lesson.id]?.name || lesson.attachedFileName}
+                                    </span>
+                                    <button
+                                      onClick={() => {
+                                        const updatedLesson = { ...lesson, attachedFileName: undefined };
+                                        const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
+                                        setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                        setLessonFiles(prev => { const next = { ...prev }; delete next[lesson.id]; return next; });
+                                      }}
+                                      className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                                      title="Remove file"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 cursor-pointer w-fit font-['DM_Sans',sans-serif] transition-colors">
+                                    <Paperclip size={14} />
+                                    <span>Attach a file</span>
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        setLessonFiles(prev => ({ ...prev, [lesson.id]: file }));
+                                        const updatedLesson = { ...lesson, attachedFileName: file.name };
+                                        const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
+                                        setModules(modules.map(m => m.id === module.id ? updatedModule : m));
+                                      }}
+                                    />
+                                  </label>
+                                )}
+                              </div>
                             </div>
                           ))}
-                          
-                          <button
-                            onClick={() => {
-                              setSelectedModule(module);
-                              addLesson();
-                            }}
-                            className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-600 hover:border-[#ed2a10] hover:text-[#ed2a10] transition-colors font-['DM_Sans',sans-serif] font-medium"
-                          >
-                            + Add Another Lesson
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => { setSelectedModule(module); addLesson(module); }}
+                              className="flex-1 border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-600 hover:border-[#0d9488] hover:text-[#0d9488] transition-colors font-['DM_Sans',sans-serif] font-medium"
+                            >
+                              + Add Lesson
+                            </button>
+                            <button
+                              onClick={() => { setSelectedModule(module); addQuiz(module); }}
+                              className="flex-1 border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-600 hover:border-[#ed2a10] hover:text-[#ed2a10] transition-colors font-['DM_Sans',sans-serif] font-medium"
+                            >
+                              + Add Quiz
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -608,8 +1095,8 @@ function CourseCreationWizard({ onClose, onSave }: {
             </div>
           )}
 
-          {/* Step 4: Review */}
-          {currentStep === 4 && (
+          {/* Step 3: Review */}
+          {currentStep === 3 && (
             <div className="space-y-4">
               <h3 className="font-['DM_Sans',sans-serif] font-semibold text-lg mb-4">
                 Review Course
@@ -639,7 +1126,7 @@ function CourseCreationWizard({ onClose, onSave }: {
                     </div>
                     <div>
                       <span className="font-['DM_Sans',sans-serif] font-medium text-gray-700">Price:</span>
-                      <p className="font-['DM_Sans',sans-serif] text-gray-900">{courseData.price || 'Not specified'}</p>
+                      <p className="font-['DM_Sans',sans-serif] text-gray-900">{courseData.price ? (courseData.price === 'Free' ? 'Free' : `₦${courseData.price}`) : 'Not specified'}</p>
                     </div>
                   </div>
                 </div>
@@ -652,20 +1139,65 @@ function CourseCreationWizard({ onClose, onSave }: {
                     <p className="font-['DM_Sans',sans-serif] text-gray-600">No modules added</p>
                   ) : (
                     <div className="space-y-2">
-                      {modules.map((module, index) => (
-                        <div key={module.id} className="bg-white rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-['DM_Sans',sans-serif] font-medium text-gray-900">
-                                Module {index + 1}: {module.title}
-                              </span>
-                              <p className="font-['DM_Sans',sans-serif] text-sm text-gray-600">
-                                {module.lessons.length} lessons
-                              </p>
-                            </div>
+                      {modules.map((module, index) => {
+                        const isOpen = openModules.has(module.id);
+                        const lessonCount = module.lessons.filter(l => l.type !== 'quiz').length;
+                        const quizCount = module.lessons.filter(l => l.type === 'quiz').length;
+                        return (
+                          <div key={module.id} className="bg-white rounded-lg overflow-hidden border border-gray-100">
+                            <button
+                              onClick={() => setOpenModules(prev => {
+                                const next = new Set(prev);
+                                isOpen ? next.delete(module.id) : next.add(module.id);
+                                return next;
+                              })}
+                              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                            >
+                              <div>
+                                <span className="font-['DM_Sans',sans-serif] font-medium text-gray-900">
+                                  Module {index + 1}: {module.title || 'Untitled Module'}
+                                </span>
+                                <p className="font-['DM_Sans',sans-serif] text-xs text-gray-500 mt-0.5">
+                                  {lessonCount} lesson{lessonCount !== 1 ? 's' : ''}{quizCount > 0 ? `, ${quizCount} quiz${quizCount !== 1 ? 'zes' : ''}` : ''}
+                                </p>
+                              </div>
+                              <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isOpen && (
+                              <div className="border-t border-gray-100 divide-y divide-gray-50">
+                                {module.lessons.length === 0 ? (
+                                  <p className="px-4 py-3 text-sm text-gray-400 font-['DM_Sans',sans-serif]">No content added</p>
+                                ) : (
+                                  module.lessons.map((lesson, li) => (
+                                    <div key={lesson.id} className="flex items-start gap-3 px-4 py-3">
+                                      <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold ${lesson.type === 'quiz' ? 'bg-[#ed2a10]' : 'bg-[#0d9488]'}`}>
+                                        {lesson.type === 'quiz' ? 'Q' : li + 1}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-['DM_Sans',sans-serif] text-sm font-medium text-gray-800 truncate">
+                                          {lesson.title || (lesson.type === 'quiz' ? 'Untitled Quiz' : 'Untitled Lesson')}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                          <span className={`text-xs px-1.5 py-0.5 rounded font-['DM_Sans',sans-serif] ${lesson.type === 'quiz' ? 'bg-red-50 text-[#ed2a10]' : lesson.type === 'video' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                                            {lesson.type === 'quiz' ? 'Quiz' : lesson.type === 'video' ? 'Video' : 'Text'}
+                                          </span>
+                                          {lesson.type === 'quiz' && lesson.quizQuestions && (
+                                            <span className="text-xs text-gray-400 font-['DM_Sans',sans-serif]">{lesson.quizQuestions.length} question{lesson.quizQuestions.length !== 1 ? 's' : ''}</span>
+                                          )}
+                                          {lesson.attachedFileName && (
+                                            <span className="text-xs text-gray-400 font-['DM_Sans',sans-serif] flex items-center gap-0.5"><Paperclip size={10} />{lesson.attachedFileName}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1103,7 +1635,8 @@ function JobOpenings() {
 export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('courses');
   const [showCourseWizard, setShowCourseWizard] = useState(false);
-  const [courses, setCourses] = useState<Course[]>(coursesData);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
@@ -1117,8 +1650,29 @@ export default function AdminDashboard() {
     }
   }, [navigate]);
 
-  const handleCourseSave = (newCourse: Course) => {
-    setCourses([...courses, newCourse]);
+  // Fetch courses from Supabase on mount
+  useEffect(() => {
+    fetchCourses().then(({ data, error }) => {
+      if (!error) setCourses(data as unknown as Course[]);
+      setCoursesLoading(false);
+    });
+  }, []);
+
+  const handleCourseSave = async (newCourse: Course) => {
+    const { error } = await saveCourse({
+      id: newCourse.id,
+      title: newCourse.title,
+      description: newCourse.description,
+      duration: newCourse.duration,
+      level: newCourse.level,
+      price: newCourse.price,
+      category: newCourse.category,
+      instructor: newCourse.instructor,
+      modules: newCourse.modules,
+    });
+    if (!error) {
+      setCourses(prev => [newCourse, ...prev]);
+    }
     setShowCourseWizard(false);
   };
 
@@ -1367,7 +1921,7 @@ export default function AdminDashboard() {
 
                         <div className="flex items-center justify-between mt-auto">
                           <div className={`font-['DM_Sans',sans-serif] font-bold text-2xl ${styles.titleColor}`}>
-                            {course.price}
+                            {course.price === 'Free' ? 'Free' : course.price ? `₦${course.price}` : ''}
                           </div>
                           <div className="flex items-center gap-2">
                             <button 

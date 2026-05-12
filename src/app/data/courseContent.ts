@@ -1,10 +1,27 @@
 // Comprehensive course content with modules, lessons, and assessments
+export interface QuizOption {
+  id: string;
+  text: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  type: 'single' | 'multi';
+  options: QuizOption[];
+  correctAnswers: string[];
+}
+
 export interface Lesson {
   id: string;
   title: string;
   content: string;
   duration: string;
   type: 'video' | 'text' | 'quiz' | 'assignment';
+  videoUrl?: string;
+  videoDescription?: string;
+  attachedFileName?: string;
+  quizQuestions?: QuizQuestion[];
   completed?: boolean;
 }
 

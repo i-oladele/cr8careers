@@ -15,6 +15,7 @@ import OpportunitiesPage from "./pages/OpportunitiesPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
 import OutsourcingPage from "./pages/OutsourcingPage";
 import TrainingPage from "./pages/TrainingPage";
+import ProfilePage from "./pages/ProfilePage";
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/recruitment" element={<RecruitmentPage />} />
         <Route path="/outsourcing" element={<OutsourcingPage />} />
         <Route path="/training" element={<TrainingPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </Router>
     </AuthProvider>

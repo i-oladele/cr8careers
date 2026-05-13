@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'signup'>('login');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,8 +32,9 @@ export default function LoginPage() {
     setError('');
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (!fullName.trim()) { setError('Please enter your full name.'); return; }
     setLoading(true);
-    const { error, emailConfirmation } = await signUp(email, password);
+    const { error, emailConfirmation } = await signUp(email, password, fullName.trim());
     setLoading(false);
     if (error) { setError(error); return; }
     if (emailConfirmation) { setEmailSent(true); return; }
@@ -104,6 +106,22 @@ export default function LoginPage() {
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="font-['DM_Sans',sans-serif] text-red-600 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {tab === 'signup' && (
+                  <div>
+                    <label className="block font-['DM_Sans',sans-serif] font-semibold text-gray-700 text-sm mb-1.5">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Your full name"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 font-['DM_Sans',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#333333] focus:border-transparent"
+                    />
                   </div>
                 )}
 

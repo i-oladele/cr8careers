@@ -70,3 +70,40 @@ export async function deleteCourse(id: string): Promise<{ error: string | null }
   const { error } = await supabase.from('courses').delete().eq('id', id);
   return { error: error?.message ?? null };
 }
+
+export interface EnrollmentRow {
+  id?: string;
+  user_id: string;
+  user_email: string;
+  course_id: string;
+  course_title: string;
+  enrolled_at?: string;
+  progress_percentage: number;
+  completed: boolean;
+}
+
+export async function saveEnrollment(enrollment: Omit<EnrollmentRow, 'id' | 'enrolled_at'>): Promise<{ error: string | null }> {
+  if (!supabase) return { error: null };
+  const { error } = await supabase.from('enrollments').upsert(
+    [enrollment],
+    { onConflict: 'user_id,course_id', ignoreDuplicates: true }
+  );
+  return { error: error?.message ?? null };
+}
+
+export async function updateEnrollmentProgress(userId: string, courseId: string, progressPercentage: number, completed: boolean): Promise<void> {
+  if (!supabase) return;
+  await supabase.from('enrollments')
+    .update({ progress_percentage: progressPercentage, completed })
+    .eq('user_id', userId)
+    .eq('course_id', courseId);
+}
+
+export async function fetchEnrollments(): Promise<{ data: EnrollmentRow[]; error: string | null }> {
+  if (!supabase) return { data: [], error: null };
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select('*')
+    .order('enrolled_at', { ascending: false });
+  return { data: data ?? [], error: error?.message ?? null };
+}

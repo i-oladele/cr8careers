@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import coursesData, { Course, Module, Lesson } from '../data/courseContent';
-import { fetchCourses } from '../../lib/courseService';
+import coursesData, { Course, Lesson } from '../data/courseContent';
+import { fetchCourses, saveEnrollment, updateEnrollmentProgress } from '../../lib/courseService';
 import { downloadCertificate, CertificatePreview } from '../components/CertificateGenerator';
 import { progressTracker } from '../utils/progressTracking';
 import { useAuth } from '../context/AuthContext';
@@ -55,10 +55,12 @@ function Header() {
                 </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="font-['DM_Sans',sans-serif] text-xs text-gray-400">Signed in as</p>
-                      <p className="font-['DM_Sans',sans-serif] text-sm font-semibold text-gray-800 truncate">{user.email}</p>
-                    </div>
+                    <Link to="/profile" onClick={() => setDropdownOpen(false)} className="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      {user.user_metadata?.full_name && (
+                        <p className="font-['DM_Sans',sans-serif] text-sm font-bold text-gray-900 truncate">{user.user_metadata.full_name}</p>
+                      )}
+                      <p className="font-['DM_Sans',sans-serif] text-xs text-gray-500 truncate">{user.email}</p>
+                    </Link>
                     <Link to="/courses" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       My Courses
                     </Link>
@@ -79,10 +81,8 @@ function Header() {
 function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () => void }) {
   const questions = lesson.quizQuestions ?? [];
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, string[]>>({});
   const [showResults, setShowResults] = useState(false);
-  const [results, setResults] = useState<boolean[]>([]);
 
   if (questions.length === 0) {
     return (
@@ -95,53 +95,58 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
 
   const q = questions[currentQuestion];
   const isMulti = q.type === 'multi';
+  const selectedOptions = answers[currentQuestion] ?? [];
+  const isLastQuestion = currentQuestion === questions.length - 1;
+  const hasAnswer = selectedOptions.length > 0;
 
   const toggleOption = (optionId: string) => {
-    if (submitted) return;
-    if (isMulti) {
-      setSelectedOptions(prev =>
-        prev.includes(optionId) ? prev.filter(id => id !== optionId) : [...prev, optionId]
-      );
-    } else {
-      setSelectedOptions([optionId]);
-    }
-  };
-
-  const handleSubmit = () => {
-    if (selectedOptions.length === 0) return;
-    const correct = q.correctAnswers ?? [];
-    const isCorrect =
-      selectedOptions.length === correct.length &&
-      selectedOptions.every(id => correct.includes(id));
-    const newResults = [...results, isCorrect];
-    setResults(newResults);
-    setSubmitted(true);
+    if (showResults) return;
+    const current = answers[currentQuestion] ?? [];
+    const updated = isMulti
+      ? current.includes(optionId) ? current.filter(id => id !== optionId) : [...current, optionId]
+      : [optionId];
+    setAnswers({ ...answers, [currentQuestion]: updated });
   };
 
   const handleNext = () => {
-    setSubmitted(false);
-    setSelectedOptions([]);
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      setShowResults(true);
-    }
+    if (currentQuestion < questions.length - 1) setCurrentQuestion(currentQuestion + 1);
+  };
+
+  const handlePrev = () => {
+    if (currentQuestion > 0) setCurrentQuestion(currentQuestion - 1);
+  };
+
+  const handleSubmit = () => {
+    setShowResults(true);
   };
 
   if (showResults) {
-    const correct = results.filter(Boolean).length;
-    const score = Math.round((correct / questions.length) * 100);
+    const results = questions.map((question, i) => {
+      const selected = answers[i] ?? [];
+      const correct = question.correctAnswers ?? [];
+      return selected.length === correct.length && selected.every(id => correct.includes(id));
+    });
+    const correctCount = results.filter(Boolean).length;
+    const score = Math.round((correctCount / questions.length) * 100);
     return (
       <div className="max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-lg">
         <h3 className="font-['DM_Sans',sans-serif] font-bold text-2xl mb-6">Quiz Results</h3>
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <div className="text-6xl font-bold text-[#0d9488] mb-2">{score}%</div>
           <p className="font-['DM_Sans',sans-serif] text-lg text-gray-600">
-            {correct} of {questions.length} correct
+            {correctCount} of {questions.length} correct
           </p>
           <p className="font-['DM_Sans',sans-serif] text-lg mt-2 font-medium">
             {score >= 70 ? 'Congratulations! You passed!' : 'Keep practicing and try again!'}
           </p>
+        </div>
+        <div className="space-y-3 mb-6">
+          {questions.map((question, i) => (
+            <div key={i} className={`flex items-center gap-3 p-3 rounded-lg text-sm font-['DM_Sans',sans-serif] ${results[i] ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'}`}>
+              <span className="font-bold">{results[i] ? '✓' : '✗'}</span>
+              <span className="truncate">{question.question}</span>
+            </div>
+          ))}
         </div>
         <button
           onClick={onComplete}
@@ -176,45 +181,54 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
       <div className="space-y-3 mb-6">
         {q.options.map(option => {
           const selected = selectedOptions.includes(option.id);
-          const isCorrect = (q.correctAnswers ?? []).includes(option.id);
-          let optionClass = 'w-full text-left p-4 border rounded-lg transition-colors font-["DM_Sans",sans-serif]';
-          if (submitted) {
-            if (isCorrect) optionClass += ' border-green-500 bg-green-50 text-green-800';
-            else if (selected) optionClass += ' border-red-400 bg-red-50 text-red-700';
-            else optionClass += ' border-gray-200 text-gray-500';
-          } else {
-            optionClass += selected
-              ? ' border-[#0d9488] bg-[#f0fdf4]'
-              : ' border-gray-300 hover:border-[#0d9488] hover:bg-[#f0fdf4]';
-          }
+          const optionClass = `w-full text-left p-4 border rounded-lg transition-colors font-['DM_Sans',sans-serif] ${
+            selected
+              ? 'border-[#0d9488] bg-[#f0fdf4] text-[#0d9488]'
+              : 'border-gray-300 hover:border-[#0d9488] hover:bg-[#f0fdf4] text-gray-700'
+          }`;
           return (
             <button key={option.id} onClick={() => toggleOption(option.id)} className={optionClass}>
-              <span className="font-['DM_Sans',sans-serif]">{option.text}</span>
+              {option.text}
             </button>
           );
         })}
       </div>
 
-      {!submitted ? (
+      <div className="flex gap-3">
         <button
-          onClick={handleSubmit}
-          disabled={selectedOptions.length === 0}
-          className={`w-full py-3 rounded-lg font-['DM_Sans',sans-serif] font-bold transition-colors ${
-            selectedOptions.length === 0
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-[#ed2a10] text-white hover:bg-[#d42610]'
-          }`}
+          onClick={handlePrev}
+          disabled={currentQuestion === 0}
+          className="px-5 py-3 rounded-lg border border-gray-300 font-['DM_Sans',sans-serif] font-semibold text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Submit Answer
+          Previous
         </button>
-      ) : (
-        <button
-          onClick={handleNext}
-          className="w-full py-3 rounded-lg bg-[#0d9488] text-white font-['DM_Sans',sans-serif] font-bold hover:bg-[#0a7a70] transition-colors"
-        >
-          {currentQuestion < questions.length - 1 ? 'Next Question' : 'See Results'}
-        </button>
-      )}
+
+        {isLastQuestion ? (
+          <button
+            onClick={handleSubmit}
+            disabled={!hasAnswer}
+            className={`flex-1 py-3 rounded-lg font-['DM_Sans',sans-serif] font-bold transition-colors ${
+              hasAnswer
+                ? 'bg-[#ed2a10] text-white hover:bg-[#d42610]'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            Submit Answer
+          </button>
+        ) : (
+          <button
+            onClick={handleNext}
+            disabled={!hasAnswer}
+            className={`flex-1 py-3 rounded-lg font-['DM_Sans',sans-serif] font-bold transition-colors ${
+              hasAnswer
+                ? 'bg-[#0d9488] text-white hover:bg-[#0a7a70]'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            Next Question
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -276,7 +290,7 @@ export default function CoursePlayerPage() {
   const [currentLesson, setCurrentLesson] = useState(0);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [showCertificate, setShowCertificate] = useState(false);
-  const userName = user?.email?.split('@')[0] ?? 'Learner';
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Learner';
 
   useEffect(() => {
     if (authLoading) return;
@@ -310,6 +324,16 @@ export default function CoursePlayerPage() {
       setCourse(found);
       if (!progressTracker.isEnrolled(courseId)) {
         progressTracker.enrollInCourse(courseId, found);
+        if (user) {
+          saveEnrollment({
+            user_id: user.id,
+            user_email: user.email ?? '',
+            course_id: courseId,
+            course_title: found.title,
+            progress_percentage: 0,
+            completed: false,
+          });
+        }
       }
       const progress = progressTracker.getCourseProgress(courseId);
       if (progress) {
@@ -336,11 +360,11 @@ export default function CoursePlayerPage() {
       const progress = progressTracker.getCourseProgress(courseId);
       if (progress) {
         setCompletedLessons(new Set(progress.completedLessons));
-        
-        // Check if course is complete
         const totalLessons = course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
-        if (progress.completedLessons.length === totalLessons) {
-          setShowCertificate(true);
+        const isCompleted = progress.completedLessons.length === totalLessons;
+        if (isCompleted) setShowCertificate(true);
+        if (user) {
+          updateEnrollmentProgress(user.id, courseId, progress.progressPercentage, isCompleted);
         }
       }
     }

@@ -57,10 +57,12 @@ function Header() {
                 </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="font-['DM_Sans',sans-serif] text-xs text-gray-400">Signed in as</p>
-                      <p className="font-['DM_Sans',sans-serif] text-sm font-semibold text-gray-800 truncate">{user.email}</p>
-                    </div>
+                    <Link to="/profile" onClick={() => setDropdownOpen(false)} className="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      {user.user_metadata?.full_name && (
+                        <p className="font-['DM_Sans',sans-serif] text-sm font-bold text-gray-900 truncate">{user.user_metadata.full_name}</p>
+                      )}
+                      <p className="font-['DM_Sans',sans-serif] text-xs text-gray-500 truncate">{user.email}</p>
+                    </Link>
                     <Link to="/courses" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       My Courses
                     </Link>

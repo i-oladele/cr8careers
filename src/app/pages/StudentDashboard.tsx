@@ -4,6 +4,7 @@ import SiteHeader from '../components/SiteHeader';
 import coursesData from '../data/courseContent';
 import { progressTracker } from '../utils/progressTracking';
 import { downloadCertificate } from '../components/CertificateGenerator';
+import { useAuth } from '../context/AuthContext';
 
 
 function StatsCard({ title, value, icon, color }: { 
@@ -25,9 +26,10 @@ function StatsCard({ title, value, icon, color }: {
   );
 }
 
-function CourseProgressCard({ course, progress }: { 
-  course: any; 
+function CourseProgressCard({ course, progress, userName }: {
+  course: any;
   progress: any;
+  userName: string;
 }) {
   const progressPercentage = progress ? progress.progressPercentage : 0;
   const isCompleted = progress?.completed || false;
@@ -72,7 +74,7 @@ function CourseProgressCard({ course, progress }: {
         </Link>
         {isCompleted && (
           <button
-            onClick={() => downloadCertificate(course, 'John Doe')}
+            onClick={() => downloadCertificate(course, userName)}
             className="flex-1 border border-[#0d9488] text-[#0d9488] py-2 px-4 rounded-lg hover:bg-[#0d9488] hover:text-white transition-colors font-['DM_Sans',sans-serif] font-semibold text-sm"
           >
             Certificate
@@ -83,7 +85,7 @@ function CourseProgressCard({ course, progress }: {
   );
 }
 
-function CertificateCard({ certificate }: { certificate: any }) {
+function CertificateCard({ certificate, userName }: { certificate: any; userName: string }) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-start justify-between mb-4">
@@ -105,7 +107,7 @@ function CertificateCard({ certificate }: { certificate: any }) {
           onClick={() => {
             const course = coursesData.find(c => c.id === certificate.courseId);
             if (course) {
-              downloadCertificate(course, 'John Doe');
+              downloadCertificate(course, userName);
             }
           }}
           className="flex-1 bg-[#0d9488] text-white py-2 px-4 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-semibold text-sm"
@@ -121,6 +123,7 @@ function CertificateCard({ certificate }: { certificate: any }) {
 }
 
 export default function StudentDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     coursesEnrolled: 0,
     coursesCompleted: 0,
@@ -130,13 +133,13 @@ export default function StudentDashboard() {
   });
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [certificates, setCertificates] = useState<any[]>([]);
-  const [userName] = useState('John Doe');
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Learner';
 
   useEffect(() => {
-    // Initialize user if not exists
     const profile = progressTracker.getUserProfile();
     if (!profile) {
-      progressTracker.initializeUserProfile(userName, 'john.doe@example.com');
+      progressTracker.initializeUserProfile(userName, user?.email ?? '');
     }
 
     // Load stats
@@ -156,7 +159,7 @@ export default function StudentDashboard() {
     // Load certificates
     const userCertificates = progressTracker.getCertificates();
     setCertificates(userCertificates);
-  }, [userName]);
+  }, [userName, user?.email]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -221,10 +224,11 @@ export default function StudentDashboard() {
               <div className="space-y-4">
                 {enrolledCourses.length > 0 ? (
                   enrolledCourses.map((course, index) => (
-                    <CourseProgressCard 
+                    <CourseProgressCard
                       key={index}
                       course={course}
                       progress={course.progress}
+                      userName={userName}
                     />
                   ))
                 ) : (
@@ -260,9 +264,10 @@ export default function StudentDashboard() {
               <div className="space-y-4">
                 {certificates.length > 0 ? (
                   certificates.map((certificate, index) => (
-                    <CertificateCard 
+                    <CertificateCard
                       key={index}
                       certificate={certificate}
+                      userName={userName}
                     />
                   ))
                 ) : (

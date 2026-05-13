@@ -2178,15 +2178,10 @@ export default function AdminDashboard() {
                         </div>
                       )}
                       <div className="flex flex-col gap-4 flex-1 p-6">
-                        <div className="flex items-start justify-between">
-                          <h3 className={`font-['DM_Sans',sans-serif] font-bold text-2xl tracking-tight ${styles.titleColor}`}>{course.title}</h3>
-                          <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${styles.categoryBg}`}>
-                            {course.category}
-                          </span>
-                        </div>
+                        <h3 className={`font-['DM_Sans',sans-serif] font-bold text-2xl tracking-tight ${styles.titleColor}`}>{course.title}</h3>
                         <p className="font-['DM_Sans',sans-serif] text-black text-lg">{course.description.length > 120 ? course.description.slice(0, 120) + '...' : course.description}</p>
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+
+                        <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
                           <div className="flex items-center gap-2">
                             <img src="/ClockCountdown.svg" alt="Duration" className="w-4 h-4 filter brightness-0 opacity-50" />
                             <span>{course.duration}</span>
@@ -2203,6 +2198,9 @@ export default function AdminDashboard() {
                             )}
                             <span>{course.level}</span>
                           </div>
+                          <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${styles.categoryBg}`}>
+                            {course.category}
+                          </span>
                         </div>
 
                         <div className="flex items-center justify-between mt-auto">

@@ -221,22 +221,10 @@ function CourseCard({ title, description, duration, level, price, category, cour
         </div>
       )}
       <div className="flex flex-col gap-4 flex-1 p-6">
-        <div className="flex items-start justify-between">
-          <h3 className={`font-['DM_Sans',sans-serif] font-bold text-2xl tracking-tight ${styles.titleColor}`}>{title}</h3>
-          <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
-            category === 'Leadership' ? 'bg-[#4062B9] text-white border-[#4062B9]' :
-            category === 'Technical' ? 'bg-[#ED2A10] text-white border-[#ED2A10]' :
-            category === 'Soft Skills' ? 'bg-[#BB6BD9] text-white border-[#BB6BD9]' :
-            category === 'Career' ? 'bg-[#EB9B07] text-white border-[#EB9B07]' :
-            category === 'Core Hospitality' ? 'bg-[#D64EB8] text-white border-[#D64EB8]' :
-            'border-gray-200 text-gray-700'
-          }`}>
-            {category}
-          </span>
-        </div>
+        <h3 className={`font-['DM_Sans',sans-serif] font-bold text-2xl tracking-tight ${styles.titleColor}`}>{title}</h3>
         <p className="font-['DM_Sans',sans-serif] text-black text-lg">{description.length > 120 ? description.slice(0, 120) + '...' : description}</p>
-        
-        <div className="flex items-center gap-4 text-sm text-gray-600">
+
+        <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
           <div className="flex items-center gap-2">
             <img src="/ClockCountdown.svg" alt="Duration" className="w-4 h-4 filter brightness-0 opacity-50" />
             <span>{duration}</span>
@@ -253,6 +241,16 @@ function CourseCard({ title, description, duration, level, price, category, cour
             )}
             <span>{level}</span>
           </div>
+          <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
+            category === 'Leadership' ? 'bg-[#4062B9] text-white border-[#4062B9]' :
+            category === 'Technical' ? 'bg-[#ED2A10] text-white border-[#ED2A10]' :
+            category === 'Soft Skills' ? 'bg-[#BB6BD9] text-white border-[#BB6BD9]' :
+            category === 'Career' ? 'bg-[#EB9B07] text-white border-[#EB9B07]' :
+            category === 'Core Hospitality' ? 'bg-[#D64EB8] text-white border-[#D64EB8]' :
+            'border-gray-200 text-gray-700'
+          }`}>
+            {category}
+          </span>
         </div>
 
         <div className="flex items-center justify-between mt-auto">

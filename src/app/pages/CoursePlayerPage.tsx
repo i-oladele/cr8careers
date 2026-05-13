@@ -124,36 +124,55 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
     const results = questions.map((question, i) => {
       const selected = answers[i] ?? [];
       const correct = question.correctAnswers ?? [];
-      return selected.length === correct.length && selected.every(id => correct.includes(id));
+      return correct.length > 0 &&
+        selected.length === correct.length &&
+        selected.every(id => correct.includes(id));
     });
     const correctCount = results.filter(Boolean).length;
     const score = Math.round((correctCount / questions.length) * 100);
+    const passed = score >= 70;
+
+    const handleRetry = () => {
+      setAnswers({});
+      setCurrentQuestion(0);
+      setShowResults(false);
+    };
+
     return (
       <div className="max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-lg">
         <h3 className="font-['DM_Sans',sans-serif] font-bold text-2xl mb-6">Quiz Results</h3>
         <div className="text-center mb-8">
-          <div className="text-6xl font-bold text-[#0d9488] mb-2">{score}%</div>
+          <div className={`text-6xl font-bold mb-2 ${passed ? 'text-[#0d9488]' : 'text-[#ed2a10]'}`}>{score}%</div>
           <p className="font-['DM_Sans',sans-serif] text-lg text-gray-600">
             {correctCount} of {questions.length} correct
           </p>
-          <p className="font-['DM_Sans',sans-serif] text-lg mt-2 font-medium">
-            {score >= 70 ? 'Congratulations! You passed!' : 'Keep practicing and try again!'}
+          <p className={`font-['DM_Sans',sans-serif] text-lg mt-2 font-semibold ${passed ? 'text-[#0d9488]' : 'text-[#ed2a10]'}`}>
+            {passed ? 'Congratulations! You passed!' : 'You need 70% to pass. Please try again.'}
           </p>
         </div>
         <div className="space-y-3 mb-6">
           {questions.map((question, i) => (
             <div key={i} className={`flex items-center gap-3 p-3 rounded-lg text-sm font-['DM_Sans',sans-serif] ${results[i] ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'}`}>
-              <span className="font-bold">{results[i] ? '✓' : '✗'}</span>
+              <span className="font-bold shrink-0">{results[i] ? '✓' : '✗'}</span>
               <span className="truncate">{question.question}</span>
             </div>
           ))}
         </div>
-        <button
-          onClick={onComplete}
-          className="w-full bg-[#0d9488] text-white py-3 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-bold"
-        >
-          Continue to Next Lesson
-        </button>
+        {passed ? (
+          <button
+            onClick={onComplete}
+            className="w-full bg-[#0d9488] text-white py-3 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-bold"
+          >
+            Continue to Next Lesson
+          </button>
+        ) : (
+          <button
+            onClick={handleRetry}
+            className="w-full bg-[#ed2a10] text-white py-3 rounded-lg hover:bg-[#d42610] transition-colors font-['DM_Sans',sans-serif] font-bold"
+          >
+            Try Again
+          </button>
+        )}
       </div>
     );
   }
@@ -324,18 +343,18 @@ export default function CoursePlayerPage() {
       setCourse(found);
       if (!progressTracker.isEnrolled(courseId)) {
         progressTracker.enrollInCourse(courseId, found);
-        if (user) {
-          saveEnrollment({
-            user_id: user.id,
-            user_email: user.email ?? '',
-            course_id: courseId,
-            course_title: found.title,
-            progress_percentage: 0,
-            completed: false,
-          });
-        }
       }
       const progress = progressTracker.getCourseProgress(courseId);
+      if (user) {
+        saveEnrollment({
+          user_id: user.id,
+          user_email: user.email ?? '',
+          course_id: courseId,
+          course_title: found.title,
+          progress_percentage: progress?.progressPercentage ?? 0,
+          completed: progress?.completed ?? false,
+        });
+      }
       if (progress) {
         setCompletedLessons(new Set(progress.completedLessons));
         if (progress.currentLesson) {

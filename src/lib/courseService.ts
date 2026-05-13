@@ -86,7 +86,7 @@ export async function saveEnrollment(enrollment: Omit<EnrollmentRow, 'id' | 'enr
   if (!supabase) return { error: null };
   const { error } = await supabase.from('enrollments').upsert(
     [enrollment],
-    { onConflict: 'user_id,course_id', ignoreDuplicates: true }
+    { onConflict: 'user_id,course_id' }
   );
   return { error: error?.message ?? null };
 }

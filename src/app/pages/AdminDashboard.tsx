@@ -51,9 +51,11 @@ function LearnersSection() {
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [tableError, setTableError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchEnrollments().then(({ data }) => {
+    fetchEnrollments().then(({ data, error }) => {
+      if (error) setTableError(error);
       setEnrollments(data);
       setLoading(false);
     });
@@ -94,6 +96,29 @@ function LearnersSection() {
       {loading ? (
         <div className="flex items-center justify-center h-48">
           <p className="font-['DM_Sans',sans-serif] text-gray-500">Loading learners...</p>
+        </div>
+      ) : tableError ? (
+        <div className="bg-white rounded-xl shadow p-10">
+          <div className="text-4xl mb-3 text-center">⚠️</div>
+          <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-[#1d1d1d] mb-2 text-center">Enrollments table not set up</h3>
+          <p className="font-['DM_Sans',sans-serif] text-gray-500 text-sm mb-4 text-center">
+            Run the following SQL in your Supabase SQL Editor to create the required table:
+          </p>
+          <pre className="bg-gray-900 text-green-400 text-xs rounded-lg p-4 overflow-x-auto font-mono leading-relaxed whitespace-pre">{`create table enrollments (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null,
+  user_email text not null,
+  course_id text not null,
+  course_title text,
+  enrolled_at timestamptz default now(),
+  progress_percentage numeric default 0,
+  completed boolean default false,
+  unique(user_id, course_id)
+);
+alter table enrollments disable row level security;`}</pre>
+          <p className="font-['DM_Sans',sans-serif] text-xs text-gray-400 mt-3 text-center">
+            Error: {tableError}
+          </p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl shadow p-12 text-center">

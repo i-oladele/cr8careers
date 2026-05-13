@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
 import { fetchCourses, CourseRow } from "../../lib/courseService";
+import coursesData from "../data/courseContent";
 import { useAuth } from "../context/AuthContext";
 import SiteHeader from "../components/SiteHeader";
 
@@ -298,10 +299,25 @@ export default function CoursesPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch courses from Supabase
+  // Fetch courses from Supabase, then fill in any static courses not already there
   useEffect(() => {
-    fetchCourses().then(({ data, error }) => {
-      if (!error) setCourses(data);
+    fetchCourses().then(({ data }) => {
+      const supabaseIds = new Set(data.map(c => c.id));
+      const staticAsRows: CourseRow[] = coursesData
+        .filter(c => !supabaseIds.has(c.id))
+        .map(c => ({
+          id: c.id,
+          title: c.title,
+          description: c.description,
+          duration: c.duration,
+          level: c.level,
+          price: c.price,
+          category: c.category,
+          instructor: c.instructor,
+          modules: c.modules,
+          thumbnail_url: c.thumbnailUrl ?? '',
+        }));
+      setCourses([...data, ...staticAsRows]);
       setLoading(false);
     });
   }, []);

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import coursesData, { Course, Lesson } from '../data/courseContent';
-import { fetchCourses, saveEnrollment, updateEnrollmentProgress } from '../../lib/courseService';
+import { fetchCourseById, saveEnrollment, updateEnrollmentProgress, fetchUserEnrollment } from '../../lib/courseService';
 import { downloadCertificate, CertificatePreview } from '../components/CertificateGenerator';
 import { progressTracker } from '../utils/progressTracking';
 import { useAuth } from '../context/AuthContext';
@@ -252,21 +253,23 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
   );
 }
 
-function CertificateModal({ 
-  isOpen, 
-  onClose, 
-  course, 
-  userName 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  course: Course; 
-  userName: string; 
+function CertificateModal({
+  isOpen,
+  onClose,
+  course,
+  userName,
+  userId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  course: Course;
+  userName: string;
+  userId?: string;
 }) {
   if (!isOpen) return null;
 
   const handleDownload = () => {
-    downloadCertificate(course, userName);
+    downloadCertificate(course, userName, userId);
   };
 
   return (
@@ -305,6 +308,8 @@ export default function CoursePlayerPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
+  const [courseLoading, setCourseLoading] = useState(true);
+  const [courseError, setCourseError] = useState<string | null>(null);
   const [currentModule, setCurrentModule] = useState(0);
   const [currentLesson, setCurrentLesson] = useState(0);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
@@ -316,85 +321,168 @@ export default function CoursePlayerPage() {
     if (!user) { navigate(`/login?redirect=/course/${courseId}`); return; }
     if (!courseId) { navigate('/courses'); return; }
 
+    let cancelled = false;
+
     const loadCourse = async () => {
-      // Try Supabase first, fall back to static data
-      let found: Course | null = null;
-      const { data } = await fetchCourses();
-      const row = data.find(r => r.id === courseId);
-      if (row) {
-        found = {
-          id: row.id,
-          title: row.title,
-          description: row.description,
-          duration: row.duration,
-          level: row.level,
-          price: row.price,
-          category: row.category,
-          instructor: row.instructor,
-          modules: row.modules ?? [],
-          thumbnailUrl: row.thumbnail_url ?? '',
-        };
-      } else {
-        found = coursesData.find(c => c.id === courseId) ?? null;
-      }
+      setCourse(null);
+      setCourseError(null);
+      setCourseLoading(true);
 
-      if (!found) { navigate('/courses'); return; }
+      try {
+        // Try Supabase first, fall back to static data
+        let found: Course | null = null;
+        const { data: row, error } = await fetchCourseById(courseId);
+        if (row) {
+          found = {
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            duration: row.duration,
+            level: row.level,
+            price: row.price,
+            category: row.category,
+            instructor: row.instructor,
+            modules: row.modules ?? [],
+            thumbnailUrl: row.thumbnail_url ?? '',
+          };
+        } else {
+          found = coursesData.find(c => c.id === courseId) ?? null;
+        }
 
-      setCourse(found);
-      if (!progressTracker.isEnrolled(courseId)) {
-        progressTracker.enrollInCourse(courseId, found);
-      }
-      const progress = progressTracker.getCourseProgress(courseId);
-      if (user) {
-        saveEnrollment({
-          user_id: user.id,
-          user_email: user.email ?? '',
-          course_id: courseId,
-          course_title: found.title,
-          progress_percentage: progress?.progressPercentage ?? 0,
-          completed: progress?.completed ?? false,
-        });
-      }
-      if (progress) {
-        setCompletedLessons(new Set(progress.completedLessons));
-        if (progress.currentLesson) {
-          const foundModule = found.modules.find(m =>
-            m.lessons.some(l => l.id === progress.currentLesson)
-          );
-          if (foundModule) {
-            setCurrentModule(found.modules.indexOf(foundModule));
-            setCurrentLesson(foundModule.lessons.findIndex(l => l.id === progress.currentLesson));
+        if (!found) {
+          if (error) {
+            throw new Error(error);
+          }
+          navigate('/courses');
+          return;
+        }
+
+        if (cancelled) return;
+        setCourse(found);
+
+        if (user) {
+          // Supabase is the source of truth for authenticated users
+          const { data: enrollment, error: enrollmentError } = await fetchUserEnrollment(user.id, courseId);
+          if (cancelled) return;
+          if (enrollmentError) throw new Error(enrollmentError);
+
+          if (enrollment) {
+            const completed = new Set<string>(enrollment.completed_lessons ?? []);
+            setCompletedLessons(completed);
+            if (enrollment.completed) setShowCertificate(true);
+          } else {
+            // First visit: create the enrollment row
+            const { error: saveError } = await saveEnrollment({
+              user_id: user.id,
+              user_email: user.email ?? '',
+              course_id: courseId,
+              course_title: found.title,
+              progress_percentage: 0,
+              completed: false,
+              completed_lessons: [],
+            });
+            if (saveError) throw new Error(saveError);
+          }
+        } else {
+          // Unauthenticated fallback: use localStorage
+          if (!progressTracker.isEnrolled(courseId)) {
+            progressTracker.enrollInCourse(courseId, found);
+          }
+          const progress = progressTracker.getCourseProgress(courseId);
+          if (progress) {
+            setCompletedLessons(new Set(progress.completedLessons));
+            if (progress.currentLesson) {
+              const foundModule = found.modules.find(m =>
+                m.lessons.some(l => l.id === progress.currentLesson)
+              );
+              if (foundModule) {
+                setCurrentModule(found.modules.indexOf(foundModule));
+                setCurrentLesson(foundModule.lessons.findIndex(l => l.id === progress.currentLesson));
+              }
+            }
+            if (progress.completed) setShowCertificate(true);
           }
         }
-        if (progress.completed) setShowCertificate(true);
+      } catch (error) {
+        if (!cancelled) {
+          setCourseError(error instanceof Error ? error.message : 'Unable to load this course.');
+        }
+      } finally {
+        if (!cancelled) {
+          setCourseLoading(false);
+        }
       }
     };
 
     loadCourse();
-  }, [courseId, navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, courseId, navigate, user]);
 
-  const markLessonComplete = (lessonId: string) => {
+  const markLessonComplete = async (lessonId: string) => {
     if (course && courseId) {
-      progressTracker.completeLesson(courseId, lessonId, course);
-      const progress = progressTracker.getCourseProgress(courseId);
-      if (progress) {
-        setCompletedLessons(new Set(progress.completedLessons));
-        const totalLessons = course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
-        const isCompleted = progress.completedLessons.length === totalLessons;
-        if (isCompleted) setShowCertificate(true);
-        if (user) {
-          updateEnrollmentProgress(user.id, courseId, progress.progressPercentage, isCompleted);
+      const totalLessons = course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
+      const newCompleted = new Set(completedLessons);
+      newCompleted.add(lessonId);
+      const progressPercentage = (newCompleted.size / totalLessons) * 100;
+      const isCompleted = newCompleted.size >= totalLessons;
+
+      if (user) {
+        // Save to Supabase — source of truth for authenticated users
+        try {
+          const { error } = await updateEnrollmentProgress(user.id, courseId, progressPercentage, isCompleted, Array.from(newCompleted));
+          if (error) throw new Error(error);
+        } catch (error) {
+          setCourseError(error instanceof Error ? error.message : 'Unable to save lesson progress.');
+          return;
         }
+      } else {
+        // Unauthenticated fallback: localStorage only
+        progressTracker.completeLesson(courseId, lessonId, course);
       }
+
+      setCompletedLessons(newCompleted);
+      if (isCompleted) setShowCertificate(true);
     }
   };
 
-  if (!course) {
+  if (courseLoading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="pt-24 flex items-center justify-center">
           <p className="font-['DM_Sans',sans-serif] text-lg">Loading course...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (courseError || !course) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="pt-24 px-4 flex items-center justify-center">
+          <div className="max-w-md text-center bg-white border border-red-100 rounded-lg p-6 shadow-sm">
+            <h1 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900 mb-2">Course could not be loaded</h1>
+            <p className="font-['DM_Sans',sans-serif] text-gray-600 mb-6">
+              {courseError ?? 'Please try again or choose another course.'}
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-[#ed2a10] text-white px-5 py-2 rounded-lg font-['DM_Sans',sans-serif] font-bold hover:bg-[#d42610] transition-colors"
+              >
+                Try Again
+              </button>
+              <Link
+                to="/courses"
+                className="border border-gray-300 text-gray-700 px-5 py-2 rounded-lg font-['DM_Sans',sans-serif] font-bold hover:bg-gray-50 transition-colors"
+              >
+                Back to Courses
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -618,7 +706,7 @@ export default function CoursePlayerPage() {
               ) : (
                 <div
                   className="prose max-w-none font-['DM_Sans',sans-serif] text-gray-700 leading-relaxed rich-content"
-                  dangerouslySetInnerHTML={{ __html: currentLessonData.content }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentLessonData.content) }}
                 />
               )}
             </div>
@@ -656,11 +744,12 @@ export default function CoursePlayerPage() {
         </div>
       </div>
 
-      <CertificateModal 
+      <CertificateModal
         isOpen={showCertificate}
         onClose={() => setShowCertificate(false)}
         course={course}
         userName={userName}
+        userId={user?.id}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
-import { fetchCourses, CourseRow } from "../../lib/courseService";
+import { fetchCourseSummaries, CourseSummaryRow } from "../../lib/courseService";
 import { useAuth } from "../context/AuthContext";
 import SiteHeader from "../components/SiteHeader";
 
@@ -240,17 +240,17 @@ function CourseCard({ title, description, duration, level, price, category, cour
               <span>📚</span>
             )}
             <span>{level}</span>
+            <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
+              category === 'Leadership' ? 'bg-[#4062B9] text-white border-[#4062B9]' :
+              category === 'Technical' ? 'bg-[#ED2A10] text-white border-[#ED2A10]' :
+              category === 'Soft Skills' ? 'bg-[#BB6BD9] text-white border-[#BB6BD9]' :
+              category === 'Career' ? 'bg-[#EB9B07] text-white border-[#EB9B07]' :
+              category === 'Core Hospitality' ? 'bg-[#D64EB8] text-white border-[#D64EB8]' :
+              'border-gray-200 text-gray-700'
+            }`}>
+              {category}
+            </span>
           </div>
-          <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
-            category === 'Leadership' ? 'bg-[#4062B9] text-white border-[#4062B9]' :
-            category === 'Technical' ? 'bg-[#ED2A10] text-white border-[#ED2A10]' :
-            category === 'Soft Skills' ? 'bg-[#BB6BD9] text-white border-[#BB6BD9]' :
-            category === 'Career' ? 'bg-[#EB9B07] text-white border-[#EB9B07]' :
-            category === 'Core Hospitality' ? 'bg-[#D64EB8] text-white border-[#D64EB8]' :
-            'border-gray-200 text-gray-700'
-          }`}>
-            {category}
-          </span>
         </div>
 
         <div className="flex items-center justify-between mt-auto">
@@ -279,8 +279,9 @@ export default function CoursesPage() {
   const [selectedDuration, setSelectedDuration] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('All');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [courses, setCourses] = useState<CourseRow[]>([]);
+  const [courses, setCourses] = useState<CourseSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -298,10 +299,29 @@ export default function CoursesPage() {
 
   // Fetch courses from Supabase
   useEffect(() => {
-    fetchCourses().then(({ data }) => {
-      setCourses(data);
-      setLoading(false);
-    });
+    let cancelled = false;
+
+    const loadCourses = async () => {
+      setLoading(true);
+      setCoursesError(null);
+
+      try {
+        const { data, error } = await fetchCourseSummaries();
+        if (error) throw new Error(error);
+        if (!cancelled) setCourses(data);
+      } catch (error) {
+        if (!cancelled) {
+          setCoursesError(error instanceof Error ? error.message : 'Unable to load courses.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadCourses();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filteredCourses = courses.filter(course => {
@@ -483,6 +503,11 @@ export default function CoursesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {loading ? (
               <div className="col-span-3 text-center py-16 font-['DM_Sans',sans-serif] text-gray-500">Loading courses...</div>
+            ) : coursesError ? (
+              <div className="col-span-3 text-center py-16">
+                <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900 mb-2">Courses could not be loaded</h2>
+                <p className="font-['DM_Sans',sans-serif] text-gray-600">{coursesError}</p>
+              </div>
             ) : filteredCourses.map((course, index) => (
               <CourseCard
                 key={course.id ?? index}
@@ -505,7 +530,7 @@ export default function CoursesPage() {
             ))}
           </div>
           
-          {filteredCourses.length === 0 && (
+          {!loading && !coursesError && filteredCourses.length === 0 && (
             <div className="text-center py-12">
               <p className="font-['DM_Sans',sans-serif] text-gray-500 text-lg">
                 {(() => {

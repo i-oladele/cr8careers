@@ -31,7 +31,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (!fullName.trim()) { setError('Please enter your full name.'); return; }
     setLoading(true);
     const { error, emailConfirmation } = await signUp(email, password, fullName.trim());
@@ -148,7 +148,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 font-['DM_Sans',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#333333] focus:border-transparent"
                   />
                 </div>

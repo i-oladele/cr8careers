@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import type { UserAttributes } from '@supabase/supabase-js';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -124,9 +125,10 @@ export default function ProfilePage() {
   const handleSaveInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) { showToast('Full name cannot be empty.', 'error'); return; }
+    if (!supabase) { showToast('Supabase is not configured.', 'error'); return; }
     setSavingInfo(true);
 
-    const updates: Record<string, any> = { data: { full_name: fullName.trim() } };
+    const updates: UserAttributes = { data: { full_name: fullName.trim() } };
     if (email.trim() !== user?.email) updates.email = email.trim();
 
     const { error } = await supabase.auth.updateUser(updates);
@@ -143,6 +145,7 @@ export default function ProfilePage() {
     e.preventDefault();
     if (newPassword.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
     if (newPassword !== confirmPassword) { showToast('Passwords do not match.', 'error'); return; }
+    if (!supabase) { showToast('Supabase is not configured.', 'error'); return; }
     setSavingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSavingPassword(false);

@@ -14,7 +14,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signIn: async () => ({ error: null }),
-  signUp: async () => ({ error: null, emailConfirmation: false } as any),
+  signUp: async () => ({ error: null, emailConfirmation: false }),
   signOut: async () => {},
 });
 
@@ -23,6 +23,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
@@ -36,11 +41,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) return { error: 'Supabase is not configured.' };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    if (!supabase) return { error: 'Supabase is not configured.', emailConfirmation: false };
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -51,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
   };
 

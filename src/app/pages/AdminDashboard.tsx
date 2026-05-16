@@ -8,7 +8,7 @@ import {
   Quote, Code, Minus, Link2, Palette, Highlighter, Eraser, Paperclip, X, GripVertical, ChevronDown,
 } from 'lucide-react';
 import coursesData, { Course, Module, Lesson, QuizQuestion, QuizOption } from '../data/courseContent';
-import { saveCourse, updateCourse, fetchCourses, deleteCourse, fetchEnrollments, EnrollmentRow } from '../../lib/courseService';
+import { saveCourse, updateCourse, fetchCourses, deleteCourse, fetchEnrollments, EnrollmentRow, CourseRow } from '../../lib/courseService';
 import { supabase } from '../../lib/supabase';
 import { progressTracker } from '../utils/progressTracking';
 
@@ -752,8 +752,8 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
           img.onerror = () => reject(new Error('Could not read the image file.'));
           img.src = objectUrl;
         });
-      } catch (e: any) {
-        setSaveError(e.message ?? 'Failed to process thumbnail.');
+      } catch (e: unknown) {
+        setSaveError(e instanceof Error ? e.message : 'Failed to process thumbnail.');
         setIsSaving(false);
         return;
       }
@@ -1133,7 +1133,7 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
                                   <select
                                     value={lesson.type}
                                     onChange={(e) => {
-                                      const updatedLesson = { ...lesson, type: e.target.value as any };
+                                      const updatedLesson = { ...lesson, type: e.target.value as Lesson['type'] };
                                       const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
                                       setModules(modules.map(m => m.id === module.id ? updatedModule : m));
                                     }}
@@ -1242,7 +1242,7 @@ function CourseCreationWizard({ onClose, onSave, editingCourse }: {
                                     </span>
                                     <button
                                       onClick={() => {
-                                        const updatedLesson = { ...lesson, attachedFileName: undefined };
+                                        const updatedLesson: Lesson = { ...lesson, attachedFileName: undefined };
                                         const updatedModule = { ...module, lessons: module.lessons.map(l => l.id === lesson.id ? updatedLesson : l) };
                                         setModules(modules.map(m => m.id === module.id ? updatedModule : m));
                                         setLessonFiles(prev => { const next = { ...prev }; delete next[lesson.id]; return next; });
@@ -1854,6 +1854,7 @@ export default function AdminDashboard() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  const [adminVerified, setAdminVerified] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
@@ -1867,15 +1868,24 @@ export default function AdminDashboard() {
     toastTimer.current = setTimeout(() => setToast(null), 4000);
   };
 
-  // Check if user is admin
+  // Check if user is authenticated admin via Supabase session
   useEffect(() => {
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    if (!isAdmin) {
-      navigate('/admin/login');
-    }
+    (async () => {
+      if (!supabase) {
+        navigate('/admin/login');
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.user.app_metadata?.role !== 'admin') {
+        navigate('/admin/login');
+        return;
+      }
+      setAdminVerified(true);
+    })();
   }, [navigate]);
 
-  const mapRowToCourse = (row: any): Course => ({
+  const mapRowToCourse = (row: CourseRow): Course => ({
     id: row.id,
     title: row.title,
     description: row.description,
@@ -1895,8 +1905,9 @@ export default function AdminDashboard() {
 
   // Fetch courses from Supabase on mount
   useEffect(() => {
+    if (!adminVerified) return;
     reloadCourses().finally(() => setCoursesLoading(false));
-  }, []);
+  }, [adminVerified]);
 
   const handleCourseSave = async (savedCourse: Course): Promise<string | null> => {
     const payload = {
@@ -1922,8 +1933,8 @@ export default function AdminDashboard() {
         showToast('Course created successfully.', 'success');
       }
       await reloadCourses();
-    } catch (e: any) {
-      const msg = e?.message ?? 'Something went wrong. Please try again.';
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong. Please try again.';
       showToast(msg, 'error');
       return msg;
     }
@@ -2197,10 +2208,10 @@ export default function AdminDashboard() {
                               <span>📚</span>
                             )}
                             <span>{course.level}</span>
+                            <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${styles.categoryBg}`}>
+                              {course.category}
+                            </span>
                           </div>
-                          <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${styles.categoryBg}`}>
-                            {course.category}
-                          </span>
                         </div>
 
                         <div className="flex items-center justify-between mt-auto">

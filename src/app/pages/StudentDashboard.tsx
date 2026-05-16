@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
-import coursesData from '../data/courseContent';
-import { progressTracker } from '../utils/progressTracking';
+import { fetchUserEnrollments, fetchCourseSummaries } from '../../lib/courseService';
 import { downloadCertificate } from '../components/CertificateGenerator';
 import { useAuth } from '../context/AuthContext';
+import type { Course } from '../data/courseContent';
 
+interface CourseProgress {
+  progressPercentage: number;
+  completed: boolean;
+}
+
+interface DashboardCourse extends Course {
+  progress: CourseProgress;
+}
+
+interface DashboardCertificate {
+  courseId: string;
+  courseName: string;
+  issuedDate: string;
+  courseData: Course;
+}
 
 function StatsCard({ title, value, icon, color }: { 
   title: string; 
@@ -26,10 +41,11 @@ function StatsCard({ title, value, icon, color }: {
   );
 }
 
-function CourseProgressCard({ course, progress, userName }: {
-  course: any;
-  progress: any;
+function CourseProgressCard({ course, progress, userName, userId }: {
+  course: DashboardCourse;
+  progress: CourseProgress;
   userName: string;
+  userId?: string;
 }) {
   const progressPercentage = progress ? progress.progressPercentage : 0;
   const isCompleted = progress?.completed || false;
@@ -74,7 +90,7 @@ function CourseProgressCard({ course, progress, userName }: {
         </Link>
         {isCompleted && (
           <button
-            onClick={() => downloadCertificate(course, userName)}
+            onClick={() => downloadCertificate(course, userName, userId)}
             className="flex-1 border border-[#0d9488] text-[#0d9488] py-2 px-4 rounded-lg hover:bg-[#0d9488] hover:text-white transition-colors font-['DM_Sans',sans-serif] font-semibold text-sm"
           >
             Certificate
@@ -85,7 +101,7 @@ function CourseProgressCard({ course, progress, userName }: {
   );
 }
 
-function CertificateCard({ certificate, userName }: { certificate: any; userName: string }) {
+function CertificateCard({ certificate, userName, userId }: { certificate: DashboardCertificate; userName: string; userId?: string }) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-start justify-between mb-4">
@@ -104,12 +120,7 @@ function CertificateCard({ certificate, userName }: { certificate: any; userName
       
       <div className="flex gap-3">
         <button
-          onClick={() => {
-            const course = coursesData.find(c => c.id === certificate.courseId);
-            if (course) {
-              downloadCertificate(course, userName);
-            }
-          }}
+          onClick={() => downloadCertificate(certificate.courseData, userName, userId)}
           className="flex-1 bg-[#0d9488] text-white py-2 px-4 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-semibold text-sm"
         >
           Download
@@ -131,35 +142,108 @@ export default function StudentDashboard() {
     totalCertificates: 0,
     averageProgress: 0
   });
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
-  const [certificates, setCertificates] = useState<any[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<DashboardCourse[]>([]);
+  const [certificates, setCertificates] = useState<DashboardCertificate[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Learner';
 
   useEffect(() => {
-    const profile = progressTracker.getUserProfile();
-    if (!profile) {
-      progressTracker.initializeUserProfile(userName, user?.email ?? '');
-    }
+    if (!user) return;
 
-    // Load stats
-    const learningStats = progressTracker.getLearningStats();
-    setStats(learningStats);
+    let cancelled = false;
 
-    // Load enrolled courses
-    const enrolledIds = progressTracker.getEnrolledCourses();
-    const courses = enrolledIds.map(id => {
-      const course = coursesData.find(c => c.id === id);
-      const progress = progressTracker.getCourseProgress(id);
-      return { ...course, progress };
-    }).filter(Boolean);
-    
-    setEnrolledCourses(courses);
+    const loadDashboard = async () => {
+      setDashboardLoading(true);
+      setDashboardError(null);
 
-    // Load certificates
-    const userCertificates = progressTracker.getCertificates();
-    setCertificates(userCertificates);
-  }, [userName, user?.email]);
+      try {
+        const [
+          { data: enrollments, error: enrollmentsError },
+          { data: courses, error: coursesError },
+        ] = await Promise.all([
+          fetchUserEnrollments(user.id),
+          fetchCourseSummaries(),
+        ]);
+
+        if (enrollmentsError || coursesError) {
+          throw new Error(enrollmentsError ?? coursesError ?? 'Unable to load dashboard.');
+        }
+
+        if (cancelled) return;
+
+      // Build enrolled course cards by merging enrollment progress with full course data
+      const enrolled = enrollments.map(e => {
+        const fullCourse = courses.find(c => c.id === e.course_id);
+        return {
+          id: e.course_id,
+          title: e.course_title,
+          duration: fullCourse?.duration ?? '',
+          level: fullCourse?.level ?? '',
+          instructor: fullCourse?.instructor ?? 'CR8Careers',
+          modules: [] as Course['modules'],
+          price: fullCourse?.price ?? '',
+          category: fullCourse?.category ?? '',
+          description: fullCourse?.description ?? '',
+          progress: {
+            progressPercentage: e.progress_percentage,
+            completed: e.completed,
+          },
+        };
+      });
+
+      setEnrolledCourses(enrolled);
+
+      const completed = enrollments.filter(e => e.completed);
+      const totalLessons = enrollments.reduce((acc, e) => acc + (e.completed_lessons?.length ?? 0), 0);
+
+      setStats({
+        coursesEnrolled: enrollments.length,
+        coursesCompleted: completed.length,
+        totalLessonsCompleted: totalLessons,
+        totalCertificates: completed.length,
+        averageProgress: enrollments.length
+          ? enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / enrollments.length
+          : 0,
+      });
+
+      setCertificates(
+        completed.map(e => {
+          const fullCourse = courses.find(c => c.id === e.course_id);
+          return {
+            courseId: e.course_id,
+            courseName: e.course_title,
+            issuedDate: e.enrolled_at ?? new Date().toISOString(),
+            courseData: {
+              id: e.course_id,
+              title: e.course_title,
+              instructor: fullCourse?.instructor ?? 'CR8Careers',
+              duration: fullCourse?.duration ?? 'Self-paced',
+              level: fullCourse?.level ?? 'All Levels',
+              modules: [] as Course['modules'],
+              description: fullCourse?.description ?? '',
+              price: fullCourse?.price ?? '',
+              category: fullCourse?.category ?? '',
+            },
+          };
+        })
+      );
+
+      } catch (error) {
+        if (!cancelled) {
+          setDashboardError(error instanceof Error ? error.message : 'Unable to load dashboard.');
+        }
+      } finally {
+        if (!cancelled) setDashboardLoading(false);
+      }
+    };
+
+    loadDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -222,13 +306,25 @@ export default function StudentDashboard() {
               </div>
               
               <div className="space-y-4">
-                {enrolledCourses.length > 0 ? (
+                {dashboardLoading ? (
+                  <div className="bg-white rounded-xl shadow-lg p-8 text-center font-['DM_Sans',sans-serif] text-gray-500">
+                    Loading your courses...
+                  </div>
+                ) : dashboardError ? (
+                  <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+                    <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-[#1d1d1d] mb-2">
+                      Dashboard could not be loaded
+                    </h3>
+                    <p className="font-['DM_Sans',sans-serif] text-gray-600">{dashboardError}</p>
+                  </div>
+                ) : enrolledCourses.length > 0 ? (
                   enrolledCourses.map((course, index) => (
                     <CourseProgressCard
                       key={index}
                       course={course}
                       progress={course.progress}
                       userName={userName}
+                      userId={user?.id}
                     />
                   ))
                 ) : (
@@ -262,12 +358,21 @@ export default function StudentDashboard() {
               </div>
               
               <div className="space-y-4">
-                {certificates.length > 0 ? (
+                {dashboardLoading ? (
+                  <div className="bg-white rounded-xl shadow-lg p-6 text-center font-['DM_Sans',sans-serif] text-gray-500">
+                    Loading certificates...
+                  </div>
+                ) : dashboardError ? (
+                  <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+                    <p className="font-['DM_Sans',sans-serif] text-sm text-gray-600">Certificates are unavailable right now.</p>
+                  </div>
+                ) : certificates.length > 0 ? (
                   certificates.map((certificate, index) => (
                     <CertificateCard
                       key={index}
                       certificate={certificate}
                       userName={userName}
+                      userId={user?.id}
                     />
                   ))
                 ) : (

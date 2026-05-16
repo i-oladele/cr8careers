@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { Course } from '../data/courseContent';
+import { fetchUserEnrollment } from '../../lib/courseService';
 
 interface CertificateData {
   userName: string;
@@ -180,7 +181,16 @@ async function generateCertificate(data: CertificateData) {
   pdf.save(`certificate-${data.courseName.replace(/\s+/g, '-').toLowerCase()}.pdf`);
 }
 
-export async function downloadCertificate(course: Course, userName: string) {
+export async function downloadCertificate(course: Course, userName: string, userId?: string): Promise<boolean> {
+  // Verify completion in Supabase before generating the PDF
+  if (userId) {
+    const { data: enrollment } = await fetchUserEnrollment(userId, course.id);
+    if (!enrollment?.completed) {
+      alert('Certificate cannot be downloaded — this course has not been completed.');
+      return false;
+    }
+  }
+
   const data: CertificateData = {
     userName,
     courseName: course.title,
@@ -190,6 +200,7 @@ export async function downloadCertificate(course: Course, userName: string) {
     level: course.level || 'All Levels',
   };
   await generateCertificate(data);
+  return true;
 }
 
 export function CertificatePreview({

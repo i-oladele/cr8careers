@@ -9,6 +9,8 @@ interface Question {
   points: number;
 }
 
+type QuestionType = Question['type'];
+
 interface QuizData {
   title: string;
   description: string;
@@ -48,7 +50,7 @@ export function QuizBuilder({ onQuizCreate, initialQuiz }: QuizBuilderProps) {
     });
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+  const updateQuestion = <K extends keyof Question>(index: number, field: K, value: Question[K]) => {
     const updatedQuestions = [...quiz.questions];
     updatedQuestions[index] = { ...updatedQuestions[index], [field]: value };
     setQuiz({ ...quiz, questions: updatedQuestions });
@@ -223,7 +225,7 @@ export function QuizBuilder({ onQuizCreate, initialQuiz }: QuizBuilderProps) {
                       </label>
                       <select
                         value={question.type}
-                        onChange={(e) => updateQuestion(qIndex, 'type', e.target.value)}
+                        onChange={(e) => updateQuestion(qIndex, 'type', e.target.value as QuestionType)}
                         className="w-full border border-gray-300 rounded-lg px-4 py-2 font-['DM_Sans',sans-serif]"
                       >
                         <option value="multiple-choice">Multiple Choice</option>

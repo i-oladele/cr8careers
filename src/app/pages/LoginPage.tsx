@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
 
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -34,10 +33,9 @@ export default function LoginPage() {
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (!fullName.trim()) { setError('Please enter your full name.'); return; }
     setLoading(true);
-    const { error, emailConfirmation } = await signUp(email, password, fullName.trim());
+    const { error } = await signUp(email, password, fullName.trim());
     setLoading(false);
     if (error) { setError(error); return; }
-    if (emailConfirmation) { setEmailSent(true); return; }
     navigate(redirect);
   };
 
@@ -61,7 +59,7 @@ export default function LoginPage() {
           {/* Tabs */}
           <div className="flex border-b border-gray-200">
             <button
-              onClick={() => { setTab('login'); setError(''); setEmailSent(false); }}
+              onClick={() => { setTab('login'); setError(''); }}
               className={`flex-1 py-4 font-['DM_Sans',sans-serif] font-semibold text-sm transition-colors ${
                 tab === 'login'
                   ? 'text-[#333333] border-b-2 border-[#333333]'
@@ -71,7 +69,7 @@ export default function LoginPage() {
               Log In
             </button>
             <button
-              onClick={() => { setTab('signup'); setError(''); setEmailSent(false); }}
+              onClick={() => { setTab('signup'); setError(''); }}
               className={`flex-1 py-4 font-['DM_Sans',sans-serif] font-semibold text-sm transition-colors ${
                 tab === 'signup'
                   ? 'text-[#333333] border-b-2 border-[#333333]'
@@ -83,26 +81,7 @@ export default function LoginPage() {
           </div>
 
           <div className="p-8">
-            {emailSent ? (
-              <div className="text-center py-4">
-                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h2 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900 mb-2">Check your email</h2>
-                <p className="font-['DM_Sans',sans-serif] text-gray-500 text-sm">
-                  We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then log in.
-                </p>
-                <button
-                  onClick={() => { setEmailSent(false); setTab('login'); }}
-                  className="mt-6 font-['DM_Sans',sans-serif] text-sm text-[#333333] underline"
-                >
-                  Back to Log In
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={tab === 'login' ? handleLogin : handleSignUp} className="space-y-5">
+            <form onSubmit={tab === 'login' ? handleLogin : handleSignUp} className="space-y-5">
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="font-['DM_Sans',sans-serif] text-red-600 text-sm">{error}</p>
@@ -177,7 +156,6 @@ export default function LoginPage() {
                   {loading ? 'Please wait...' : tab === 'login' ? 'Log In' : 'Create Account'}
                 </button>
               </form>
-            )}
           </div>
         </div>
 

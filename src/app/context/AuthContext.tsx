@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; emailConfirmation: boolean }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -14,7 +14,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signIn: async () => ({ error: null }),
-  signUp: async () => ({ error: null, emailConfirmation: false }),
+  signUp: async () => ({ error: null }),
   signOut: async () => {},
 });
 
@@ -47,14 +47,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    if (!supabase) return { error: 'Supabase is not configured.', emailConfirmation: false };
+    if (!supabase) return { error: 'Supabase is not configured.' };
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     });
-    if (error) return { error: error.message, emailConfirmation: false };
-    return { error: null, emailConfirmation: !data.session };
+    if (error) return { error: error.message };
+    // Supabase returns no session and empty identities when email already exists
+    // (email enumeration protection gives a fake success instead of an error)
+    if (!data.session && data.user?.identities?.length === 0) {
+      return { error: 'An account with this email already exists. Please log in instead.' };
+    }
+    return { error: null };
   };
 
   const signOut = async () => {

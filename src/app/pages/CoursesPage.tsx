@@ -63,7 +63,7 @@ function Header() {
                       )}
                       <p className="font-['DM_Sans',sans-serif] text-xs text-gray-500 truncate">{user.email}</p>
                     </Link>
-                    <Link to="/courses" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Link to="/my-courses" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       My Courses
                     </Link>
                     <button onClick={handleSignOut} className="w-full text-left px-4 py-2.5 font-['DM_Sans',sans-serif] text-sm text-red-600 hover:bg-red-50 transition-colors">

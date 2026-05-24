@@ -10,7 +10,13 @@ interface CertificateData {
   level: string;
 }
 
-async function getLogoDataUrl(): Promise<string | null> {
+interface LogoData {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
+async function getLogoData(): Promise<LogoData | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -21,7 +27,11 @@ async function getLogoDataUrl(): Promise<string | null> {
       const ctx = canvas.getContext('2d');
       if (!ctx) { resolve(null); return; }
       ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+      resolve({
+        dataUrl: canvas.toDataURL('image/png'),
+        width: img.width,
+        height: img.height,
+      });
     };
     img.onerror = () => resolve(null);
     img.src = '/logo.png';
@@ -61,9 +71,11 @@ async function generateCertificate(data: CertificateData) {
   });
 
   // Logo on ivory background
-  const logoData = await getLogoDataUrl();
+  const logoData = await getLogoData();
   if (logoData) {
-    pdf.addImage(logoData, 'PNG', cx - 28, 16, 56, 18);
+    const logoWidth = 60;
+    const logoHeight = logoWidth * (logoData.height / logoData.width);
+    pdf.addImage(logoData.dataUrl, 'PNG', cx - logoWidth / 2, 16, logoWidth, logoHeight);
   } else {
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(16);
@@ -233,7 +245,7 @@ export function CertificatePreview({
 
         {/* Logo on ivory */}
         <div className="flex flex-col items-center pt-8 pb-3 px-8">
-          <img src="/logo.png" alt="CR8Careers" className="h-12 object-contain mb-1" />
+          <img src="/logo.png" alt="CR8Careers" className="w-56 h-auto object-contain mb-1" />
           <p className="text-xs tracking-widest" style={{ color: '#B4A064' }}>
             REPOSITIONING HR &nbsp;|&nbsp; REPOSITIONING PEOPLE
           </p>

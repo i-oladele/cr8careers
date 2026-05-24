@@ -262,7 +262,7 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-gray-50">
       <SiteHeader />
       
-      <div className="pt-24 pb-16">
+      <div className="pt-40 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Welcome Section */}
           <div className="mb-8">

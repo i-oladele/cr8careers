@@ -18,6 +18,7 @@ const RecruitmentPage = lazy(() => import("./pages/RecruitmentPage"));
 const OutsourcingPage = lazy(() => import("./pages/OutsourcingPage"));
 const TrainingPage = lazy(() => import("./pages/TrainingPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const MyCoursesPage = lazy(() => import("./pages/MyCoursesPage"));
 
 function PageFallback() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/outsourcing" element={<OutsourcingPage />} />
             <Route path="/training" element={<TrainingPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/my-courses" element={<MyCoursesPage />} />
           </Routes>
         </Suspense>
       </Router>

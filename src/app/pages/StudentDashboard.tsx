@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import { fetchUserEnrollments, fetchCourseSummaries } from '../../lib/courseService';
-import { downloadCertificate } from '../components/CertificateGenerator';
 import { useAuth } from '../context/AuthContext';
 import type { Course } from '../data/courseContent';
 
@@ -49,6 +48,10 @@ function CourseProgressCard({ course, progress, userName, userId }: {
 }) {
   const progressPercentage = progress ? progress.progressPercentage : 0;
   const isCompleted = progress?.completed || false;
+  const handleCertificateDownload = async () => {
+    const { downloadCertificate } = await import('../components/CertificateGenerator');
+    await downloadCertificate(course, userName, userId);
+  };
   
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
@@ -90,7 +93,7 @@ function CourseProgressCard({ course, progress, userName, userId }: {
         </Link>
         {isCompleted && (
           <button
-            onClick={() => downloadCertificate(course, userName, userId)}
+            onClick={handleCertificateDownload}
             className="flex-1 border border-[#0d9488] text-[#0d9488] py-2 px-4 rounded-lg hover:bg-[#0d9488] hover:text-white transition-colors font-['DM_Sans',sans-serif] font-semibold text-sm"
           >
             Certificate
@@ -102,6 +105,11 @@ function CourseProgressCard({ course, progress, userName, userId }: {
 }
 
 function CertificateCard({ certificate, userName, userId }: { certificate: DashboardCertificate; userName: string; userId?: string }) {
+  const handleDownload = async () => {
+    const { downloadCertificate } = await import('../components/CertificateGenerator');
+    await downloadCertificate(certificate.courseData, userName, userId);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-start justify-between mb-4">
@@ -120,7 +128,7 @@ function CertificateCard({ certificate, userName, userId }: { certificate: Dashb
       
       <div className="flex gap-3">
         <button
-          onClick={() => downloadCertificate(certificate.courseData, userName, userId)}
+          onClick={handleDownload}
           className="flex-1 bg-[#0d9488] text-white py-2 px-4 rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-semibold text-sm"
         >
           Download
@@ -134,7 +142,8 @@ function CertificateCard({ certificate, userName, userId }: { certificate: Dashb
 }
 
 export default function StudentDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     coursesEnrolled: 0,
     coursesCompleted: 0,
@@ -150,7 +159,11 @@ export default function StudentDashboard() {
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Learner';
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      navigate('/login?redirect=/dashboard', { replace: true });
+      return;
+    }
 
     let cancelled = false;
 
@@ -243,7 +256,7 @@ export default function StudentDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [authLoading, navigate, user]);
 
   return (
     <div className="min-h-screen bg-gray-50">

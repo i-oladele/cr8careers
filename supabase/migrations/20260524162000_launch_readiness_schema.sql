@@ -2,7 +2,7 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.courses (
   id text primary key default gen_random_uuid()::text,
-  title text not null,
+  title text not null default '',
   description text not null default '',
   duration text not null default '',
   level text not null default '',
@@ -42,19 +42,6 @@ create table if not exists public.enrollments (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.contact_submissions (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  email text not null,
-  phone text,
-  company text,
-  service text,
-  message text not null,
-  status text not null default 'new',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 alter table public.enrollments
   add column if not exists id uuid default gen_random_uuid(),
   add column if not exists user_id uuid,
@@ -66,6 +53,19 @@ alter table public.enrollments
   add column if not exists completed boolean not null default false,
   add column if not exists completed_lessons text[] not null default '{}'::text[],
   add column if not exists updated_at timestamptz not null default now();
+
+create table if not exists public.contact_submissions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null default '',
+  email text not null default '',
+  phone text,
+  company text,
+  service text,
+  message text not null default '',
+  status text not null default 'new',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
 alter table public.contact_submissions
   add column if not exists id uuid default gen_random_uuid(),
@@ -79,32 +79,18 @@ alter table public.contact_submissions
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
-update public.courses
-set id = gen_random_uuid()::text
-where id is null;
+update public.courses set id = gen_random_uuid()::text where id is null;
+update public.enrollments set id = gen_random_uuid() where id is null;
+update public.contact_submissions set id = gen_random_uuid() where id is null;
 
-alter table public.courses
-  alter column id set not null;
-
-update public.enrollments
-set id = gen_random_uuid()
-where id is null;
-
-update public.contact_submissions
-set id = gen_random_uuid()
-where id is null;
-
-alter table public.enrollments
-  alter column id set not null;
-
-alter table public.contact_submissions
-  alter column id set not null;
+alter table public.courses alter column id set not null;
+alter table public.enrollments alter column id set not null;
+alter table public.contact_submissions alter column id set not null;
 
 do $$
 begin
   if not exists (
-    select 1
-    from pg_constraint
+    select 1 from pg_constraint
     where conname = 'courses_pkey'
       and conrelid = 'public.courses'::regclass
   ) then
@@ -112,8 +98,7 @@ begin
   end if;
 
   if not exists (
-    select 1
-    from pg_constraint
+    select 1 from pg_constraint
     where conname = 'enrollments_pkey'
       and conrelid = 'public.enrollments'::regclass
   ) then
@@ -121,8 +106,7 @@ begin
   end if;
 
   if not exists (
-    select 1
-    from pg_constraint
+    select 1 from pg_constraint
     where conname = 'contact_submissions_pkey'
       and conrelid = 'public.contact_submissions'::regclass
   ) then

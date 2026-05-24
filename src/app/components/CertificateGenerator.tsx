@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import { Course } from '../data/courseContent';
 import { fetchUserEnrollment } from '../../lib/courseService';
 
@@ -30,6 +29,7 @@ async function getLogoDataUrl(): Promise<string | null> {
 }
 
 async function generateCertificate(data: CertificateData) {
+  const { jsPDF } = await import('jspdf');
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const W = 297, H = 210;
   const cx = W / 2;

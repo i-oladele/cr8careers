@@ -331,11 +331,25 @@ export default function CoursesPage() {
       course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.level.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDuration = selectedDuration === 'All' || 
-      (selectedDuration === 'Short' && course.duration.includes('1 week') || course.duration.includes('2 weeks') || course.duration.includes('3 weeks')) ||
-      (selectedDuration === 'Medium' && course.duration.includes('4 weeks') || course.duration.includes('5 weeks') || course.duration.includes('6 weeks')) ||
-      (selectedDuration === 'Long' && course.duration.includes('7 weeks') || course.duration.includes('8 weeks') || course.duration.includes('more'));
+
+    const duration = course.duration.toLowerCase();
+    const matchesDuration =
+      selectedDuration === 'All' ||
+      (selectedDuration === 'Short' && (
+        duration.includes('1 week') ||
+        duration.includes('2 weeks') ||
+        duration.includes('3 weeks')
+      )) ||
+      (selectedDuration === 'Medium' && (
+        duration.includes('4 weeks') ||
+        duration.includes('5 weeks') ||
+        duration.includes('6 weeks')
+      )) ||
+      (selectedDuration === 'Long' && (
+        duration.includes('7 weeks') ||
+        duration.includes('8 weeks') ||
+        duration.includes('more')
+      ));
     
     const matchesLevel = selectedLevel === 'All' || course.level === selectedLevel;
     

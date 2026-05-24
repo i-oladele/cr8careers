@@ -3,10 +3,9 @@ import { Link } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
 
-// Raster images using figma:asset scheme
-import imgHappyBusinessColleaguesEnjoyingTeamSuccess1 from "figma:asset/dbde12ac83019448fd7d1c3b4f482b84dbf00a86.png";
-import img66076CfcA1394149A2Ce6E2218B28F4F1 from "figma:asset/4d0c7ef792ecd015893aa0241f7f90c984508dcb.png";
-import imgSideViewManMakingPlansRedecorateHouse1 from "figma:asset/c6942f71ee26c5bc57090122d97fa8c6d440e1f7.png";
+import imgHappyBusinessColleaguesEnjoyingTeamSuccess1 from "../../assets/optimized/happy-business-colleagues.jpg";
+import img66076CfcA1394149A2Ce6E2218B28F4F1 from "../../assets/optimized/assessment-illustration.jpg";
+import imgSideViewManMakingPlansRedecorateHouse1 from "../../assets/optimized/business-planning.jpg";
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
 
 
@@ -403,6 +402,8 @@ export default function HomePage() {
               <img 
                 alt="Happy business colleagues" 
                 className="w-full h-auto rounded-lg object-cover mb-0" 
+                loading="lazy"
+                decoding="async"
                 src={imgHappyBusinessColleaguesEnjoyingTeamSuccess1} 
               />
             </div>
@@ -477,7 +478,7 @@ export default function HomePage() {
           </div>
           
           <div className="bg-[#016e71] rounded-2xl p-10 relative overflow-hidden">
-            <img src="/Hero.svg" alt="Hero" className="absolute inset-0 w-full h-full object-cover opacity-20" />
+            <img src="/Hero.svg" alt="Hero" className="absolute inset-0 w-full h-full object-cover opacity-20" loading="lazy" decoding="async" />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
               <div>
                 <h3 className="font-['DM_Sans',sans-serif] font-bold text-[#ffecfb] text-3xl md:text-4xl mb-6">
@@ -515,6 +516,8 @@ export default function HomePage() {
                 <img 
                   alt="Assessment illustration" 
                   className="w-full h-full object-cover rounded-lg" 
+                  loading="lazy"
+                  decoding="async"
                   src={img66076CfcA1394149A2Ce6E2218B28F4F1} 
                 />
               </div>
@@ -565,6 +568,8 @@ export default function HomePage() {
               <img 
                 alt="Business planning" 
                 className="w-full h-full object-cover rounded-lg" 
+                loading="lazy"
+                decoding="async"
                 src={imgSideViewManMakingPlansRedecorateHouse1} 
               />
             </div>

@@ -7,6 +7,39 @@ import { downloadCertificate, CertificatePreview } from '../components/Certifica
 import { progressTracker } from '../utils/progressTracking';
 import { useAuth } from '../context/AuthContext';
 
+function getTotalLessons(course: Course): number {
+  return course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
+}
+
+function findFirstLessonPosition(course: Course): { moduleIndex: number; lessonIndex: number } | null {
+  for (let moduleIndex = 0; moduleIndex < course.modules.length; moduleIndex += 1) {
+    if (course.modules[moduleIndex].lessons.length > 0) {
+      return { moduleIndex, lessonIndex: 0 };
+    }
+  }
+  return null;
+}
+
+function findNextLessonPosition(course: Course, moduleIndex: number, lessonIndex: number) {
+  for (let m = moduleIndex; m < course.modules.length; m += 1) {
+    const startLesson = m === moduleIndex ? lessonIndex + 1 : 0;
+    if (course.modules[m].lessons[startLesson]) {
+      return { moduleIndex: m, lessonIndex: startLesson };
+    }
+  }
+  return null;
+}
+
+function findPreviousLessonPosition(course: Course, moduleIndex: number, lessonIndex: number) {
+  for (let m = moduleIndex; m >= 0; m -= 1) {
+    const startLesson = m === moduleIndex ? lessonIndex - 1 : course.modules[m].lessons.length - 1;
+    if (course.modules[m].lessons[startLesson]) {
+      return { moduleIndex: m, lessonIndex: startLesson };
+    }
+  }
+  return null;
+}
+
 // Header Component
 function Header() {
   const { user, signOut } = useAuth();
@@ -357,8 +390,14 @@ export default function CoursePlayerPage() {
           return;
         }
 
+        const firstLessonPosition = findFirstLessonPosition(found);
+
         if (cancelled) return;
         setCourse(found);
+        setCurrentModule(firstLessonPosition?.moduleIndex ?? 0);
+        setCurrentLesson(firstLessonPosition?.lessonIndex ?? 0);
+
+        if (!firstLessonPosition) return;
 
         if (user) {
           // Supabase is the source of truth for authenticated users
@@ -422,7 +461,8 @@ export default function CoursePlayerPage() {
 
   const markLessonComplete = async (lessonId: string) => {
     if (course && courseId) {
-      const totalLessons = course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
+      const totalLessons = getTotalLessons(course);
+      if (totalLessons === 0) return;
       const newCompleted = new Set(completedLessons);
       newCompleted.add(lessonId);
       const progressPercentage = (newCompleted.size / totalLessons) * 100;
@@ -488,9 +528,59 @@ export default function CoursePlayerPage() {
     );
   }
 
+  const hasPlayableLessons = getTotalLessons(course) > 0;
+
+  if (!hasPlayableLessons) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="pt-24 px-4 flex items-center justify-center">
+          <div className="max-w-md text-center bg-white border border-yellow-100 rounded-lg p-6 shadow-sm">
+            <h1 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900 mb-2">Course content is not available yet</h1>
+            <p className="font-['DM_Sans',sans-serif] text-gray-600 mb-6">
+              This course has been created, but lessons have not been published.
+            </p>
+            <Link
+              to="/courses"
+              className="inline-block bg-[#0d9488] text-white px-5 py-2 rounded-lg font-['DM_Sans',sans-serif] font-bold hover:bg-[#0a7a70] transition-colors"
+            >
+              Back to Courses
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const currentModuleData = course.modules[currentModule];
-  const currentLessonData = currentModuleData.lessons[currentLesson];
-  const progress = (completedLessons.size / course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0)) * 100;
+  const currentLessonData = currentModuleData?.lessons[currentLesson];
+
+  if (!currentModuleData || !currentLessonData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="pt-24 px-4 flex items-center justify-center">
+          <div className="max-w-md text-center bg-white border border-red-100 rounded-lg p-6 shadow-sm">
+            <h1 className="font-['DM_Sans',sans-serif] font-bold text-xl text-gray-900 mb-2">Lesson could not be opened</h1>
+            <p className="font-['DM_Sans',sans-serif] text-gray-600 mb-6">
+              Please return to the course list and try again.
+            </p>
+            <Link
+              to="/courses"
+              className="inline-block bg-[#ed2a10] text-white px-5 py-2 rounded-lg font-['DM_Sans',sans-serif] font-bold hover:bg-[#d42610] transition-colors"
+            >
+              Back to Courses
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const totalLessons = getTotalLessons(course);
+  const progress = totalLessons > 0 ? (completedLessons.size / totalLessons) * 100 : 0;
+  const hasPreviousLesson = findPreviousLessonPosition(course, currentModule, currentLesson) !== null;
+  const hasNextLesson = findNextLessonPosition(course, currentModule, currentLesson) !== null;
 
   // Helper function to check if a lesson is unlocked
   const isLessonUnlocked = (moduleIndex: number, lessonIndex: number): boolean => {
@@ -503,19 +593,10 @@ export default function CoursePlayerPage() {
     
     if (moduleIndex === 0 && lessonIndex === 0) return true;
     if (completedLessons.has(lessonId)) return true;
-    
-    // Find the previous lesson
-    let prevModule = moduleIndex;
-    let prevLesson = lessonIndex - 1;
-    
-    if (prevLesson < 0) {
-      // Moving to previous module's last lesson
-      prevModule = moduleIndex - 1;
-      if (prevModule < 0) return true;
-      prevLesson = course.modules[prevModule].lessons.length - 1;
-    }
-    
-    const prevLessonId = course.modules[prevModule].lessons[prevLesson].id;
+
+    const previousPosition = findPreviousLessonPosition(course, moduleIndex, lessonIndex);
+    if (!previousPosition) return true;
+    const prevLessonId = course.modules[previousPosition.moduleIndex].lessons[previousPosition.lessonIndex].id;
     
     // Lesson is unlocked if previous lesson is completed
     return completedLessons.has(prevLessonId);
@@ -524,15 +605,9 @@ export default function CoursePlayerPage() {
   const handleNextLesson = () => {
     markLessonComplete(currentLessonData.id);
     
-    let nextModule = currentModule;
-    let nextLesson = currentLesson;
-    
-    if (currentLesson < currentModuleData.lessons.length - 1) {
-      nextLesson = currentLesson + 1;
-    } else if (currentModule < course.modules.length - 1) {
-      nextModule = currentModule + 1;
-      nextLesson = 0;
-    } else {
+    const nextPosition = findNextLessonPosition(course, currentModule, currentLesson);
+
+    if (!nextPosition) {
       // Course completed
       setShowCertificate(true);
       return;
@@ -540,35 +615,28 @@ export default function CoursePlayerPage() {
     
     // Update progress tracker
     if (courseId) {
-      const nextModuleData = course.modules[nextModule];
-      const nextLessonData = nextModuleData.lessons[nextLesson];
+      const nextModuleData = course.modules[nextPosition.moduleIndex];
+      const nextLessonData = nextModuleData.lessons[nextPosition.lessonIndex];
       progressTracker.updateCurrentLesson(courseId, nextLessonData.id, nextModuleData.id);
     }
     
-    setCurrentModule(nextModule);
-    setCurrentLesson(nextLesson);
+    setCurrentModule(nextPosition.moduleIndex);
+    setCurrentLesson(nextPosition.lessonIndex);
   };
 
   const handlePreviousLesson = () => {
-    let prevModule = currentModule;
-    let prevLesson = currentLesson;
-    
-    if (currentLesson > 0) {
-      prevLesson = currentLesson - 1;
-    } else if (currentModule > 0) {
-      prevModule = currentModule - 1;
-      prevLesson = course.modules[prevModule].lessons.length - 1;
-    }
+    const previousPosition = findPreviousLessonPosition(course, currentModule, currentLesson);
+    if (!previousPosition) return;
     
     // Update progress tracker
     if (courseId) {
-      const prevModuleData = course.modules[prevModule];
-      const prevLessonData = prevModuleData.lessons[prevLesson];
+      const prevModuleData = course.modules[previousPosition.moduleIndex];
+      const prevLessonData = prevModuleData.lessons[previousPosition.lessonIndex];
       progressTracker.updateCurrentLesson(courseId, prevLessonData.id, prevModuleData.id);
     }
     
-    setCurrentModule(prevModule);
-    setCurrentLesson(prevLesson);
+    setCurrentModule(previousPosition.moduleIndex);
+    setCurrentLesson(previousPosition.lessonIndex);
   };
 
   return (
@@ -715,7 +783,7 @@ export default function CoursePlayerPage() {
               <div className="flex justify-between items-center">
                 <button
                   onClick={handlePreviousLesson}
-                  disabled={currentModule === 0 && currentLesson === 0}
+                  disabled={!hasPreviousLesson}
                   className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-['DM_Sans',sans-serif] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous Lesson
@@ -731,7 +799,7 @@ export default function CoursePlayerPage() {
                   onClick={handleNextLesson}
                   className="px-6 py-3 bg-[#0d9488] text-white rounded-lg hover:bg-[#0a7a70] transition-colors font-['DM_Sans',sans-serif] font-bold"
                 >
-                  {currentModule === course.modules.length - 1 && currentLesson === currentModuleData.lessons.length - 1 
+                  {!hasNextLesson
                     ? 'Complete Course' 
                     : completedLessons.has(currentLessonData.id) 
                       ? 'Continue to Next Lesson'

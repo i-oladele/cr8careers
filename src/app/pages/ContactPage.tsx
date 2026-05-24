@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import SiteHeader from "../components/SiteHeader";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
+import { submitContactSubmission } from "../../lib/contactService";
 
 // Raster images using figma:asset scheme
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
@@ -90,6 +91,14 @@ function ContactInfoCard({ icon, title, content, link }: {
 }
 
 export default function ContactPage() {
+  const initialFormData = {
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    service: '',
+    message: ''
+  };
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -98,6 +107,8 @@ export default function ContactPage() {
     service: '',
     message: ''
   });
+  const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -106,11 +117,30 @@ export default function ContactPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle form submission here
-    alert('Thank you for contacting us! We will get back to you soon.');
+    setSubmitStatus(null);
+
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const message = formData.message.trim();
+
+    if (!name || !email || !message) {
+      setSubmitStatus({ type: 'error', message: 'Please complete your name, email, and message.' });
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await submitContactSubmission({ ...formData, name, email, message });
+    setSubmitting(false);
+
+    if (error) {
+      setSubmitStatus({ type: 'error', message: error });
+      return;
+    }
+
+    setFormData(initialFormData);
+    setSubmitStatus({ type: 'success', message: 'Thank you for contacting us. We will get back to you soon.' });
   };
 
   return (
@@ -181,6 +211,18 @@ export default function ContactPage() {
                 </h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {submitStatus && (
+                    <div
+                      role="status"
+                      className={`rounded-lg border px-4 py-3 font-['DM_Sans',sans-serif] text-sm ${
+                        submitStatus.type === 'success'
+                          ? 'border-green-200 bg-green-50 text-green-700'
+                          : 'border-red-200 bg-red-50 text-red-700'
+                      }`}
+                    >
+                      {submitStatus.message}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="font-['DM_Sans',sans-serif] font-semibold text-gray-700 mb-2 block">
@@ -192,6 +234,7 @@ export default function ContactPage() {
                         value={formData.name}
                         onChange={handleInputChange}
                         required
+                        disabled={submitting}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016e71] focus:border-transparent"
                         placeholder="John Doe"
                       />
@@ -207,6 +250,7 @@ export default function ContactPage() {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
+                        disabled={submitting}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016e71] focus:border-transparent"
                         placeholder="john@example.com"
                       />
@@ -223,6 +267,7 @@ export default function ContactPage() {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
+                        disabled={submitting}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016e71] focus:border-transparent"
                         placeholder="+234 800 000 0000"
                       />
@@ -237,6 +282,7 @@ export default function ContactPage() {
                         name="company"
                         value={formData.company}
                         onChange={handleInputChange}
+                        disabled={submitting}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016e71] focus:border-transparent"
                         placeholder="Your Company Ltd"
                       />
@@ -251,6 +297,7 @@ export default function ContactPage() {
                       name="service"
                       value={formData.service}
                       onChange={handleInputChange}
+                      disabled={submitting}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016e71] focus:border-transparent"
                     >
                       <option value="">Select a service</option>
@@ -272,6 +319,7 @@ export default function ContactPage() {
                       onChange={handleInputChange}
                       required
                       rows={6}
+                      disabled={submitting}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016e71] focus:border-transparent"
                       placeholder="Tell us how we can help you..."
                     ></textarea>
@@ -280,9 +328,10 @@ export default function ContactPage() {
                   <div className="flex items-center gap-4">
                     <button
                       type="submit"
-                      className="bg-[#016e71] text-white px-8 py-3 rounded-lg hover:bg-[#015a5d] transition-colors"
+                      disabled={submitting}
+                      className="bg-[#016e71] text-white px-8 py-3 rounded-lg hover:bg-[#015a5d] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <p className="font-['DM_Sans',sans-serif] font-bold">Send Message</p>
+                      <p className="font-['DM_Sans',sans-serif] font-bold">{submitting ? 'Sending...' : 'Send Message'}</p>
                     </button>
                     <p className="font-['DM_Sans',sans-serif] text-sm text-gray-500">
                       We'll respond within 24 hours

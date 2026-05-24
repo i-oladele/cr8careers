@@ -2,8 +2,7 @@ import { Link } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
 
-// Raster images using figma:asset scheme
-import imgHappyBusinessColleaguesEnjoyingTeamSuccess1 from "figma:asset/dbde12ac83019448fd7d1c3b4f482b84dbf00a86.png";
+import imgHappyBusinessColleaguesEnjoyingTeamSuccess1 from "../../assets/optimized/happy-business-colleagues.jpg";
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
 
 
@@ -128,6 +127,8 @@ export default function AboutPage() {
               <img 
                 alt="Our team" 
                 className="w-full h-auto rounded-2xl object-cover shadow-2xl" 
+                loading="lazy"
+                decoding="async"
                 src={imgHappyBusinessColleaguesEnjoyingTeamSuccess1} 
               />
             </div>

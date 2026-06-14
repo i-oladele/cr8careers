@@ -19,6 +19,9 @@ const OutsourcingPage = lazy(() => import("./pages/OutsourcingPage"));
 const TrainingPage = lazy(() => import("./pages/TrainingPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const MyCoursesPage = lazy(() => import("./pages/MyCoursesPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 
 function PageFallback() {
   return (
@@ -51,6 +54,9 @@ export default function App() {
             <Route path="/training" element={<TrainingPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/my-courses" element={<MyCoursesPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Routes>
         </Suspense>
       </Router>

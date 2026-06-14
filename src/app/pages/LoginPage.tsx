@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { signIn, signUp } = useAuth();
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNotice('');
     setLoading(true);
     const { error } = await signIn(email, password);
     setLoading(false);
@@ -29,14 +31,16 @@ export default function LoginPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNotice('');
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (!fullName.trim()) { setError('Please enter your full name.'); return; }
     setLoading(true);
-    const { error } = await signUp(email, password, fullName.trim());
+    const { error } = await signUp(email, password, fullName.trim(), redirect);
     setLoading(false);
     if (error) { setError(error); return; }
-    navigate(redirect);
+    setNotice('Account created. Check your email for the verification link.');
+    navigate(`/verify-email?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirect)}`);
   };
 
   return (
@@ -87,6 +91,11 @@ export default function LoginPage() {
                     <p className="font-['DM_Sans',sans-serif] text-red-600 text-sm">{error}</p>
                   </div>
                 )}
+                {notice && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="font-['DM_Sans',sans-serif] text-green-700 text-sm">{notice}</p>
+                  </div>
+                )}
 
                 {tab === 'signup' && (
                   <div>
@@ -101,6 +110,14 @@ export default function LoginPage() {
                       placeholder="Your full name"
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 font-['DM_Sans',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#333333] focus:border-transparent"
                     />
+                  </div>
+                )}
+
+                {tab === 'login' && (
+                  <div className="text-right">
+                    <Link to="/forgot-password" className="font-['DM_Sans',sans-serif] text-sm text-[#0d9488] hover:text-[#0a7a70]">
+                      Forgot password?
+                    </Link>
                   </div>
                 )}
 

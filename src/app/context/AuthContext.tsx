@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string, redirect?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -46,12 +46,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, redirect = '/courses') => {
     if (!supabase) return { error: 'Supabase is not configured.' };
+    const verifyUrl = new URL('/verify-email', window.location.origin);
+    verifyUrl.searchParams.set('email', email);
+    verifyUrl.searchParams.set('redirect', redirect);
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: verifyUrl.toString(),
+      },
     });
     if (error) return { error: error.message };
     // Supabase returns no session and empty identities when email already exists

@@ -1,6 +1,28 @@
+import { useEffect, useState } from "react";
 import SiteHeader from "../components/SiteHeader";
 import { Link } from "react-router-dom";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
+import { fetchActiveJobOpenings } from "../../lib/jobService";
+
+// Decorative themes cycled across job cards.
+const JOB_CARD_THEMES = [
+  { titleColor: "text-[#016e71]", bgColor: "bg-[#e6f3f3]", borderColor: "border-[#016e71]" },
+  { titleColor: "text-[#f58c21]", bgColor: "bg-[#fef4e6]", borderColor: "border-[#f58c21]" },
+  { titleColor: "text-[#ed2a10]", bgColor: "bg-[#ffebe6]", borderColor: "border-[#ed2a10]" },
+];
+
+interface PublicJob {
+  number: string;
+  title: string;
+  company: string;
+  location: string;
+  salary: string;
+  type: string;
+  description: string;
+  titleColor: string;
+  bgColor: string;
+  borderColor: string;
+}
 
 // Raster images using figma:asset scheme
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
@@ -116,80 +138,28 @@ function JobCard({ number, title, company, location, salary, type, description, 
 }
 
 export default function OpportunitiesPage() {
-  const jobs = [
-    {
-      number: "01",
-      title: "Senior HR Manager",
-      company: "Tech Innovations Ltd",
-      location: "Lagos, Nigeria",
-      salary: "₦250,000 - ₦350,000",
-      type: "Full-time",
-      description: "We are seeking an experienced HR Manager to lead our human resources department and drive strategic HR initiatives.",
-      titleColor: "text-[#016e71]",
-      bgColor: "bg-[#e6f3f3]",
-      borderColor: "border-[#016e71]"
-    },
-    {
-      number: "02",
-      title: "Software Developer",
-      company: "Digital Solutions Africa",
-      location: "Abuja, Nigeria",
-      salary: "₦200,000 - ₦300,000",
-      type: "Full-time",
-      description: "Looking for a skilled software developer to join our growing team and work on innovative digital solutions.",
-      titleColor: "text-[#f58c21]",
-      bgColor: "bg-[#fef4e6]",
-      borderColor: "border-[#f58c21]"
-    },
-    {
-      number: "03",
-      title: "Marketing Manager",
-      company: "Growth Partners",
-      location: "Port Harcourt, Nigeria",
-      salary: "₦180,000 - ₦250,000",
-      type: "Full-time",
-      description: "Seeking a creative marketing manager to develop and execute marketing strategies that drive business growth.",
-      titleColor: "text-[#ed2a10]",
-      bgColor: "bg-[#ffebe6]",
-      borderColor: "border-[#ed2a10]"
-    },
-    {
-      number: "04",
-      title: "Financial Analyst",
-      company: "Investment Hub",
-      location: "Lagos, Nigeria",
-      salary: "₦150,000 - ₦220,000",
-      type: "Full-time",
-      description: "We need a detail-oriented financial analyst to help analyze financial data and provide insights for business decisions.",
-      titleColor: "text-[#016e71]",
-      bgColor: "bg-[#e6f3f3]",
-      borderColor: "border-[#016e71]"
-    },
-    {
-      number: "05",
-      title: "Customer Service Representative",
-      company: "Service Excellence Ltd",
-      location: "Lagos, Nigeria",
-      salary: "₦80,000 - ₦120,000",
-      type: "Full-time",
-      description: "Looking for friendly customer service representatives to provide excellent support to our clients.",
-      titleColor: "text-[#f58c21]",
-      bgColor: "bg-[#fef4e6]",
-      borderColor: "border-[#f58c21]"
-    },
-    {
-      number: "06",
-      title: "Project Manager",
-      company: "Construction Plus",
-      location: "Abuja, Nigeria",
-      salary: "₦200,000 - ₦280,000",
-      type: "Full-time",
-      description: "Seeking an experienced project manager to oversee construction projects and ensure timely delivery.",
-      titleColor: "text-[#ed2a10]",
-      bgColor: "bg-[#ffebe6]",
-      borderColor: "border-[#ed2a10]"
-    }
-  ];
+  const [jobs, setJobs] = useState<PublicJob[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchActiveJobOpenings().then(({ data }) => {
+      const mapped = data.map((row, index) => {
+        const theme = JOB_CARD_THEMES[index % JOB_CARD_THEMES.length];
+        return {
+          number: String(index + 1).padStart(2, "0"),
+          title: row.title,
+          company: row.company,
+          location: row.location,
+          salary: row.salary,
+          type: row.type,
+          description: row.description,
+          ...theme,
+        };
+      });
+      setJobs(mapped);
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -256,29 +226,35 @@ export default function OpportunitiesPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {jobs.map((job, index) => (
-              <JobCard
-                key={index}
-                number={job.number}
-                title={job.title}
-                company={job.company}
-                location={job.location}
-                salary={job.salary}
-                type={job.type}
-                description={job.description}
-                titleColor={job.titleColor}
-                bgColor={job.bgColor}
-                borderColor={job.borderColor}
-              />
-            ))}
-          </div>
-          
-          <div className="text-center mt-12">
-            <button className="bg-[#016e71] text-white px-8 py-3 rounded-lg hover:bg-[#015a5d] transition-colors font-['DM_Sans',sans-serif] font-semibold">
-              Load More Jobs
-            </button>
-          </div>
+          {loading ? (
+            <div className="text-center py-16">
+              <p className="font-['DM_Sans',sans-serif] text-gray-500 text-lg">Loading opportunities...</p>
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-5xl mb-4">💼</div>
+              <h3 className="font-['DM_Sans',sans-serif] font-bold text-xl text-[#1d1d1d] mb-2">No open positions right now</h3>
+              <p className="font-['DM_Sans',sans-serif] text-gray-600">Check back soon, or upload your CV so we can match you as roles open up.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {jobs.map((job, index) => (
+                <JobCard
+                  key={index}
+                  number={job.number}
+                  title={job.title}
+                  company={job.company}
+                  location={job.location}
+                  salary={job.salary}
+                  type={job.type}
+                  description={job.description}
+                  titleColor={job.titleColor}
+                  bgColor={job.bgColor}
+                  borderColor={job.borderColor}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

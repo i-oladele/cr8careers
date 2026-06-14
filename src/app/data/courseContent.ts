@@ -21,6 +21,8 @@ export interface Lesson {
   videoUrl?: string;
   videoDescription?: string;
   attachedFileName?: string;
+  attachedFileUrl?: string;
+  attachedFilePath?: string;
   quizQuestions?: QuizQuestion[];
   completed?: boolean;
 }

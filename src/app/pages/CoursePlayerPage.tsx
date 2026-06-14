@@ -772,10 +772,33 @@ export default function CoursePlayerPage() {
                   onComplete={handleNextLesson}
                 />
               ) : (
-                <div
-                  className="prose max-w-none font-['DM_Sans',sans-serif] text-gray-700 leading-relaxed rich-content"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentLessonData.content) }}
-                />
+                <>
+                  <div
+                    className="prose max-w-none font-['DM_Sans',sans-serif] text-gray-700 leading-relaxed rich-content"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentLessonData.content) }}
+                  />
+                  {currentLessonData.attachedFileUrl && (
+                    <a
+                      href={currentLessonData.attachedFileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={currentLessonData.attachedFileName}
+                      className="mt-6 inline-flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-3 hover:border-[#0d9488] hover:bg-[#f0fdf4] transition-colors group"
+                    >
+                      <span className="w-9 h-9 rounded-lg bg-gray-100 group-hover:bg-white flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-['DM_Sans',sans-serif] font-semibold text-sm text-gray-900 truncate">
+                          {currentLessonData.attachedFileName ?? 'Download attachment'}
+                        </span>
+                        <span className="block font-['DM_Sans',sans-serif] text-xs text-gray-500">Lesson resource · click to download</span>
+                      </span>
+                    </a>
+                  )}
+                </>
               )}
             </div>
 

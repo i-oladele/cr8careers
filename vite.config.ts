@@ -33,4 +33,17 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/@tiptap') || id.includes('node_modules/prosemirror')) return 'editor';
+          if (id.includes('node_modules/@mui') || id.includes('node_modules/@emotion')) return 'mui';
+          if (id.includes('node_modules/jspdf')) return 'pdf';
+          if (id.includes('node_modules/html2canvas')) return 'canvas';
+          return undefined;
+        },
+      },
+    },
+  },
 })

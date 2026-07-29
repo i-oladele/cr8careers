@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
 import SiteHeader from "../components/SiteHeader";
 
@@ -120,9 +119,9 @@ function ResourceCard({ title, description, type, downloadLink }: {
         <div className="flex-1">
           <h3 className="font-['DM_Sans',sans-serif] font-bold text-lg text-[#1d1d1d] mb-2">{title}</h3>
           <p className="font-['DM_Sans',sans-serif] text-gray-600 mb-4">{description}</p>
-          <button className="font-['DM_Sans',sans-serif] font-bold text-[#f58c21] hover:text-[#e67e1a] transition-colors">
+          <a href={downloadLink} className="font-['DM_Sans',sans-serif] font-bold text-[#f58c21] hover:text-[#e67e1a] transition-colors">
             Download {type}
-          </button>
+          </a>
         </div>
       </div>
     </div>

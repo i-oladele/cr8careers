@@ -18,6 +18,7 @@ export default function ResetPasswordPage() {
       setCheckingLink(false);
       return;
     }
+    const auth = supabase.auth;
 
     let cancelled = false;
 
@@ -33,13 +34,13 @@ export default function ResetPasswordPage() {
       try {
         const code = new URLSearchParams(window.location.search).get('code');
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { error: exchangeError } = await auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
           enableResetForm();
           return;
         }
 
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await auth.getSession();
         if (sessionError) throw sessionError;
         if (session) {
           enableResetForm();

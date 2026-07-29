@@ -70,7 +70,7 @@ function TeamMemberCard({ name, role, image, description }: {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
       <div className="h-48 bg-gray-200 flex items-center justify-center">
-        <div className="w-24 h-24 bg-gray-400 rounded-full"></div>
+        <img src={image} alt={name} className="h-full w-full object-cover" />
       </div>
       <div className="p-6">
         <h3 className="font-['DM_Sans',sans-serif] font-bold text-xl text-[#1d1d1d] mb-2">{name}</h3>

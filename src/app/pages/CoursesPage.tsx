@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import svgPaths from "../../imports/Home/svg-trfy73921z";
 import { fetchCourseSummaries, CourseSummaryRow } from "../../lib/courseService";
 import { useAuth } from "../context/AuthContext";
-import SiteHeader from "../components/SiteHeader";
 
 // Raster images using figma:asset scheme
 import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
@@ -135,14 +134,13 @@ function Footer() {
   );
 }
 
-function CourseCard({ title, description, duration, level, price, category, courseId, thumbnailUrl, onStart }: {
+function CourseCard({ title, description, duration, level, price, category, thumbnailUrl, onStart }: {
   title: string;
   description: string;
   duration: string;
   level: string;
   price: string;
   category: string;
-  courseId: string;
   thumbnailUrl?: string;
   onStart: () => void;
 }) {
@@ -531,7 +529,6 @@ export default function CoursesPage() {
                 level={course.level}
                 price={course.price}
                 category={course.category}
-                courseId={course.id}
                 thumbnailUrl={course.thumbnail_url}
                 onStart={() => {
                   if (user) {
@@ -551,7 +548,7 @@ export default function CoursesPage() {
                   const hasActiveFilters = searchTerm || selectedCategory !== 'All Courses' || selectedDuration !== 'All' || selectedLevel !== 'All';
                   if (!hasActiveFilters) return "No courses available.";
                   
-                  let message = "No courses found";
+                  const message = "No courses found";
                   const conditions = [];
                   
                   if (searchTerm) conditions.push(`matching "${searchTerm}"`);

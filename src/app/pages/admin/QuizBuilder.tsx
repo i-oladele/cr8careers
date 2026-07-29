@@ -34,7 +34,7 @@ export function QuizBuilder({ questions, onChange }: { questions: QuizQuestion[]
 
   const removeOption = (qId: string, oId: string) => {
     onChange(questions.map(q => q.id === qId
-      ? { ...q, options: q.options.filter(o => o.id !== oId), correctAnswers: q.correctAnswers.filter(a => a !== oId) }
+      ? { ...q, options: q.options.filter(o => o.id !== oId), correctAnswers: (q.correctAnswers ?? []).filter(a => a !== oId) }
       : q
     ));
   };
@@ -44,9 +44,10 @@ export function QuizBuilder({ questions, onChange }: { questions: QuizQuestion[]
     if (q.type === 'single') {
       next = [oId];
     } else {
-      next = q.correctAnswers.includes(oId)
-        ? q.correctAnswers.filter(a => a !== oId)
-        : [...q.correctAnswers, oId];
+      const correctAnswers = q.correctAnswers ?? [];
+      next = correctAnswers.includes(oId)
+        ? correctAnswers.filter(a => a !== oId)
+        : [...correctAnswers, oId];
     }
     updateQuestion(q.id, { correctAnswers: next });
   };
@@ -100,7 +101,7 @@ export function QuizBuilder({ questions, onChange }: { questions: QuizQuestion[]
               {q.type === 'single' ? 'Select the correct answer' : 'Select all correct answers'}
             </p>
             {q.options.map((o, oi) => {
-              const isCorrect = q.correctAnswers.includes(o.id);
+              const isCorrect = (q.correctAnswers ?? []).includes(o.id);
               return (
                 <div key={o.id} className="flex items-center gap-2">
                   {q.type === 'single' ? (

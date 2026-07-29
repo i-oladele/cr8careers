@@ -18,6 +18,7 @@ export default function VerifyEmailPage() {
       setCheckingLink(false);
       return;
     }
+    const auth = supabase.auth;
 
     let cancelled = false;
     let redirectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -34,13 +35,13 @@ export default function VerifyEmailPage() {
       try {
         const code = new URLSearchParams(window.location.search).get('code');
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { error: exchangeError } = await auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
           finishVerification();
           return;
         }
 
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await auth.getSession();
         if (sessionError) throw sessionError;
         if (session?.user.email_confirmed_at) {
           finishVerification();

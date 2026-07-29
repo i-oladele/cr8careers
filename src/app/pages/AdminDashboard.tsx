@@ -1,13 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Course } from '../data/courseContent';
 import { saveCourse, updateCourse, fetchCourses, deleteCourse, CourseRow } from '../../lib/courseService';
 import { supabase } from '../../lib/supabase';
 import { Sidebar } from './admin/Sidebar';
-import { LearnersSection } from './admin/LearnersSection';
-import { ContactSubmissionsSection } from './admin/ContactSubmissionsSection';
-import { JobOpenings } from './admin/JobsSection';
-import { CourseCreationWizard } from './admin/CourseCreationWizard';
+
+const LearnersSection = lazy(() => import('./admin/LearnersSection').then(module => ({ default: module.LearnersSection })));
+const ContactSubmissionsSection = lazy(() => import('./admin/ContactSubmissionsSection').then(module => ({ default: module.ContactSubmissionsSection })));
+const JobOpenings = lazy(() => import('./admin/JobsSection').then(module => ({ default: module.JobOpenings })));
+const CourseCreationWizard = lazy(() => import('./admin/CourseCreationWizard').then(module => ({ default: module.CourseCreationWizard })));
+
+function AdminSectionFallback() {
+  return <div className="p-8 text-sm text-gray-500">Loading section...</div>;
+}
 
 // Main Admin Dashboard Component
 export default function AdminDashboard() {
@@ -15,7 +20,6 @@ export default function AdminDashboard() {
   const [showCourseWizard, setShowCourseWizard] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [coursesLoading, setCoursesLoading] = useState(true);
   const [adminVerified, setAdminVerified] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -68,7 +72,7 @@ export default function AdminDashboard() {
   // Fetch courses from Supabase on mount
   useEffect(() => {
     if (!adminVerified) return;
-    reloadCourses().finally(() => setCoursesLoading(false));
+    reloadCourses();
   }, [adminVerified]);
 
   const handleCourseSave = async (savedCourse: Course): Promise<string | null> => {
@@ -431,6 +435,7 @@ export default function AdminDashboard() {
           )}
 
           {/* Course Creation Screen */}
+          <Suspense fallback={<AdminSectionFallback />}>
           {activeSection === 'courses' && showCourseWizard && (
             <div className="p-6">
               <nav className="flex items-center gap-2 text-sm mb-4 font-['DM_Sans',sans-serif]">
@@ -459,6 +464,7 @@ export default function AdminDashboard() {
               <ContactSubmissionsSection />
             </div>
           )}
+          </Suspense>
         </main>
       </div>
     </div>

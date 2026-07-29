@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import coursesData, { Course, Lesson } from '../data/courseContent';
-import { fetchCourseById, saveEnrollment, updateEnrollmentProgress, fetchUserEnrollment } from '../../lib/courseService';
+import { fetchCourseById, saveEnrollment, markLessonComplete as persistLessonCompletion, submitQuiz, fetchUserEnrollment, type QuizSubmissionResult } from '../../lib/courseService';
 import { downloadCertificate, CertificatePreview } from '../components/CertificateGenerator';
 import { progressTracker } from '../utils/progressTracking';
 import { useAuth } from '../context/AuthContext';
@@ -112,11 +112,14 @@ function Header() {
   );
 }
 
-function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () => void }) {
+function QuizComponent({ courseId, lesson, onComplete }: { courseId: string; lesson: Lesson; onComplete: () => void }) {
   const questions = lesson.quizQuestions ?? [];
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string[]>>({});
   const [showResults, setShowResults] = useState(false);
+  const [result, setResult] = useState<QuizSubmissionResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   if (questions.length === 0) {
     return (
@@ -150,26 +153,30 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
     if (currentQuestion > 0) setCurrentQuestion(currentQuestion - 1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError('');
+    const answersByQuestionId = Object.fromEntries(
+      questions.map((question, index) => [question.id, answers[index] ?? []])
+    );
+    const { data, error } = await submitQuiz(courseId, lesson.id, answersByQuestionId);
+    setSubmitting(false);
+    if (error || !data) {
+      setSubmitError(error ?? 'Unable to grade this quiz. Please try again.');
+      return;
+    }
+    setResult(data);
     setShowResults(true);
   };
 
-  if (showResults) {
-    const results = questions.map((question, i) => {
-      const selected = answers[i] ?? [];
-      const correct = question.correctAnswers ?? [];
-      return correct.length > 0 &&
-        selected.length === correct.length &&
-        selected.every(id => correct.includes(id));
-    });
-    const correctCount = results.filter(Boolean).length;
-    const score = Math.round((correctCount / questions.length) * 100);
-    const passed = score >= 70;
+  if (showResults && result) {
+    const { correctCount, questionCount, score, passed } = result;
 
     const handleRetry = () => {
       setAnswers({});
       setCurrentQuestion(0);
       setShowResults(false);
+      setResult(null);
     };
 
     return (
@@ -178,19 +185,11 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
         <div className="text-center mb-8">
           <div className={`text-6xl font-bold mb-2 ${passed ? 'text-[#0d9488]' : 'text-[#ed2a10]'}`}>{score}%</div>
           <p className="font-['DM_Sans',sans-serif] text-lg text-gray-600">
-            {correctCount} of {questions.length} correct
+            {correctCount} of {questionCount} correct
           </p>
           <p className={`font-['DM_Sans',sans-serif] text-lg mt-2 font-semibold ${passed ? 'text-[#0d9488]' : 'text-[#ed2a10]'}`}>
             {passed ? 'Congratulations! You passed!' : 'You need 70% to pass. Please try again.'}
           </p>
-        </div>
-        <div className="space-y-3 mb-6">
-          {questions.map((question, i) => (
-            <div key={i} className={`flex items-center gap-3 p-3 rounded-lg text-sm font-['DM_Sans',sans-serif] ${results[i] ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'}`}>
-              <span className="font-bold shrink-0">{results[i] ? '✓' : '✗'}</span>
-              <span className="truncate">{question.question}</span>
-            </div>
-          ))}
         </div>
         {passed ? (
           <button
@@ -259,14 +258,14 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
         {isLastQuestion ? (
           <button
             onClick={handleSubmit}
-            disabled={!hasAnswer}
+            disabled={!hasAnswer || submitting}
             className={`flex-1 py-3 rounded-lg font-['DM_Sans',sans-serif] font-bold transition-colors ${
               hasAnswer
                 ? 'bg-[#ed2a10] text-white hover:bg-[#d42610]'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >
-            Submit Answer
+            {submitting ? 'Grading...' : 'Submit Quiz'}
           </button>
         ) : (
           <button
@@ -282,6 +281,7 @@ function QuizComponent({ lesson, onComplete }: { lesson: Lesson; onComplete: () 
           </button>
         )}
       </div>
+      {submitError && <p className="mt-4 text-sm text-red-600 font-['DM_Sans',sans-serif]">{submitError}</p>}
     </div>
   );
 }
@@ -462,29 +462,34 @@ export default function CoursePlayerPage() {
   const markLessonComplete = async (lessonId: string) => {
     if (course && courseId) {
       const totalLessons = getTotalLessons(course);
-      if (totalLessons === 0) return;
-      const newCompleted = new Set(completedLessons);
-      newCompleted.add(lessonId);
-      const progressPercentage = (newCompleted.size / totalLessons) * 100;
-      const isCompleted = newCompleted.size >= totalLessons;
+      if (totalLessons === 0) return false;
+      let newCompleted = new Set(completedLessons);
+      let isCompleted: boolean;
 
       if (user) {
-        // Save to Supabase — source of truth for authenticated users
+        // The database validates the lesson and computes all completion fields.
         try {
-          const { error } = await updateEnrollmentProgress(user.id, courseId, progressPercentage, isCompleted, Array.from(newCompleted));
+          const { data, error } = await persistLessonCompletion(courseId, lessonId);
           if (error) throw new Error(error);
+          if (!data) throw new Error('Unable to save lesson progress.');
+          newCompleted = new Set(data.completed_lessons ?? []);
+          isCompleted = data.completed;
         } catch (error) {
           setCourseError(error instanceof Error ? error.message : 'Unable to save lesson progress.');
-          return;
+          return false;
         }
       } else {
         // Unauthenticated fallback: localStorage only
         progressTracker.completeLesson(courseId, lessonId, course);
+        newCompleted.add(lessonId);
+        isCompleted = newCompleted.size >= totalLessons;
       }
 
       setCompletedLessons(newCompleted);
       if (isCompleted) setShowCertificate(true);
+      return true;
     }
+    return false;
   };
 
   if (courseLoading || authLoading) {
@@ -602,8 +607,19 @@ export default function CoursePlayerPage() {
     return completedLessons.has(prevLessonId);
   };
 
-  const handleNextLesson = () => {
-    markLessonComplete(currentLessonData.id);
+  const handleNextLesson = async () => {
+    if (currentLessonData.type === 'quiz' && user && courseId) {
+      const { data, error } = await fetchUserEnrollment(user.id, courseId);
+      if (error || !data?.completed_lessons?.includes(currentLessonData.id)) {
+        setCourseError(error ?? 'Pass the quiz before continuing.');
+        return;
+      }
+      setCompletedLessons(new Set(data.completed_lessons));
+      if (data.completed) setShowCertificate(true);
+    } else {
+      const saved = await markLessonComplete(currentLessonData.id);
+      if (!saved) return;
+    }
     
     const nextPosition = findNextLessonPosition(course, currentModule, currentLesson);
 
@@ -768,6 +784,7 @@ export default function CoursePlayerPage() {
             <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
               {currentLessonData.type === 'quiz' ? (
                 <QuizComponent 
+                  courseId={courseId!}
                   lesson={currentLessonData} 
                   onComplete={handleNextLesson}
                 />

@@ -55,14 +55,11 @@ function HeroSection() {
 
 function ServiceCard({ number, title, description, titleColor, bgColor, borderColor, link }: { number: string; title: string; description: string; titleColor: string; bgColor: string; borderColor: string; link: string }) {
   const getArrowColor = () => {
-    switch(titleColor) {
-      case 'text-[#016e71]': return '#016e71';
-      case 'text-[#f58c21]': return '#f58c21';
-      case 'text-[#ed2a10]': return '#ed2a10';
-      default: return '#000000';
-    }
+    if (titleColor === 'text-[#016e71]') return '#016e71';
+    if (titleColor === 'text-[#f58c21]') return '#f58c21';
+    if (titleColor === 'text-[#ed2a10]') return '#ed2a10';
+    return '#000000';
   };
-
   return (
     <div className={`relative rounded-xl ${bgColor} border ${borderColor} p-6 hover:shadow-lg transition-shadow`}>
       <div className="flex flex-col gap-4 h-full">
@@ -182,16 +179,7 @@ function CVUploadModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
   );
 }
 
-function OpportunityCard({ title, salary, location, requirements, titleColor }: { title: string; salary: string; location: string; requirements: string[]; titleColor: string }) {
-  const getArrowColor = () => {
-    switch(titleColor) {
-      case 'text-[#016e71]': return '#016e71';
-      case 'text-[#f58c21]': return '#f58c21';
-      case 'text-[#ed2a10]': return '#ed2a10';
-      default: return '#000000';
-    }
-  };
-
+function OpportunityCard({ title, salary, location, requirements }: { title: string; salary: string; location: string; requirements: string[] }) {
   return (
     <div className={`relative rounded-xl bg-white border border-[#d1d5db] p-6 hover:shadow-lg transition-shadow`}>
       <div className="flex flex-col gap-4 h-full items-start text-left">
@@ -462,14 +450,12 @@ export default function HomePage() {
                 salary="₦50,000 - ₦100,000 monthly"
                 location="Lagos, Nigeria"
                 requirements={["3+ years of culinary experience", "Knowledge of Nigerian cuisine"]}
-                titleColor="text-[#f58c21]"
               />
               <OpportunityCard
                 title="Sous Chef"
                 salary="₦50,000 - ₦100,000 monthly"
                 location="Lagos, Nigeria"
                 requirements={["Culinary school certification", "Ability to work flexible hours"]}
-                titleColor="text-[#ed2a10]"
               />
             </div>
             <Link to="/opportunities" className="border border-[#8d8d8d] hover:bg-gray-100 transition-colors px-6 py-3 rounded-lg text-center inline-block">

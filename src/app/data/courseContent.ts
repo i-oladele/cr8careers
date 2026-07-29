@@ -9,7 +9,8 @@ export interface QuizQuestion {
   question: string;
   type: 'single' | 'multi';
   options: QuizOption[];
-  correctAnswers: string[];
+  // Only present in admin authoring data. Learner-facing course RPCs remove it.
+  correctAnswers?: string[];
 }
 
 export interface Lesson {

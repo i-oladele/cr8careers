@@ -279,7 +279,7 @@ export function QuizBuilder({ onQuizCreate, initialQuiz }: QuizBuilderProps) {
                                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 font-['DM_Sans',sans-serif]"
                                 placeholder={`Option ${oIndex + 1}`}
                               />
-                              {question.options?.length > 2 && (
+                              {(question.options?.length ?? 0) > 2 && (
                                 <button
                                   type="button"
                                   onClick={() => deleteOption(qIndex, oIndex)}

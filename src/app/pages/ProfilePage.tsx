@@ -98,7 +98,6 @@ export default function ProfilePage() {
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -150,7 +149,6 @@ export default function ProfilePage() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSavingPassword(false);
     if (error) { showToast(error.message, 'error'); return; }
-    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     showToast('Password changed successfully.', 'success');

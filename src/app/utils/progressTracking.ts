@@ -1,4 +1,4 @@
-import { Course, Module, Lesson } from '../data/courseContent';
+import { Course } from '../data/courseContent';
 
 export interface UserProgress {
   courseId: string;

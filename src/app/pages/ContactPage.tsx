@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { useState } from "react";
 import SiteHeader from "../components/SiteHeader";
 import svgPaths from "../../imports/Home/svg-trfy73921z";

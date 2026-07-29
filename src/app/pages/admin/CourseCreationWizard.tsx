@@ -33,13 +33,6 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
   const [draggingLessonId, setDraggingLessonId] = useState<string | null>(null);
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const dragLesson = useRef<{ moduleId: string; lessonId: string } | null>(null);
-  const [currentLesson, setCurrentLesson] = useState<Lesson>({
-    id: '',
-    title: '',
-    content: '',
-    duration: '',
-    type: 'text'
-  });
 
   const totalSteps = 3;
 
@@ -102,7 +95,6 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
     const updatedModule = { ...target, lessons: [...target.lessons, newLesson] };
     setSelectedModule(updatedModule);
     setModules(modules.map(m => m.id === target.id ? updatedModule : m));
-    setCurrentLesson(newLesson);
   };
 
   // Keyboard-accessible alternative to drag-to-reorder lessons.
@@ -189,7 +181,7 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
             if (q.options.filter(o => o.text.trim()).length < 2) {
               errors.push(`${qLabel}: add at least two answer options.`);
             }
-            const hasValidCorrect = q.correctAnswers.some(id => q.options.find(o => o.id === id)?.text.trim());
+            const hasValidCorrect = (q.correctAnswers ?? []).some(id => q.options.find(o => o.id === id)?.text.trim());
             if (!hasValidCorrect) errors.push(`${qLabel}: mark a correct answer.`);
           });
         } else if (lesson.type === 'video') {
@@ -912,7 +904,8 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
                             <button
                               onClick={() => setOpenModules(prev => {
                                 const next = new Set(prev);
-                                isOpen ? next.delete(module.id) : next.add(module.id);
+                                if (isOpen) next.delete(module.id);
+                                else next.add(module.id);
                                 return next;
                               })}
                               className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"

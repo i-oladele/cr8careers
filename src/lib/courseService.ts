@@ -3,6 +3,8 @@ import type { Module } from '../app/data/courseContent';
 
 const SUPABASE_CONFIG_ERROR = 'Supabase is not configured.';
 const COURSE_ASSETS_BUCKET = 'course-assets';
+const COURSE_THUMBNAILS_BUCKET = 'course-thumbnails';
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 // Uploads a course thumbnail (already compressed client-side) to Supabase Storage and
 // returns its public URL. Stored as a real object so the DB only holds a small URL string.
@@ -11,12 +13,12 @@ export async function uploadCourseThumbnail(
   blob: Blob
 ): Promise<{ url: string | null; error: string | null }> {
   if (!supabase) return { url: null, error: SUPABASE_CONFIG_ERROR };
-  const path = `${courseId}/thumbnail/${Date.now()}.jpg`;
+  const path = `${courseId}/${Date.now()}.jpg`;
   const { error } = await supabase.storage
-    .from(COURSE_ASSETS_BUCKET)
+    .from(COURSE_THUMBNAILS_BUCKET)
     .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
   if (error) return { url: null, error: error.message };
-  const { data } = supabase.storage.from(COURSE_ASSETS_BUCKET).getPublicUrl(path);
+  const { data } = supabase.storage.from(COURSE_THUMBNAILS_BUCKET).getPublicUrl(path);
   return { url: data.publicUrl, error: null };
 }
 
@@ -34,8 +36,42 @@ export async function uploadLessonFile(
     .from(COURSE_ASSETS_BUCKET)
     .upload(path, file, { upsert: true, contentType: file.type || undefined });
   if (error) return { url: null, path: null, error: error.message };
-  const { data } = supabase.storage.from(COURSE_ASSETS_BUCKET).getPublicUrl(path);
-  return { url: data.publicUrl, path, error: null };
+  const { data, error: signError } = await supabase.storage
+    .from(COURSE_ASSETS_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  return { url: data?.signedUrl ?? null, path, error: signError?.message ?? null };
+}
+
+async function signLessonAssets(modules: Module[]): Promise<Module[]> {
+  if (!supabase) return modules;
+  const assetPath = (lesson: Module['lessons'][number]) => {
+    if (lesson.attachedFilePath) return lesson.attachedFilePath;
+    const marker = `/storage/v1/object/public/${COURSE_ASSETS_BUCKET}/`;
+    const markerIndex = lesson.attachedFileUrl?.indexOf(marker) ?? -1;
+    return markerIndex >= 0
+      ? decodeURIComponent(lesson.attachedFileUrl!.slice(markerIndex + marker.length))
+      : undefined;
+  };
+  const paths = modules.flatMap(module => module.lessons)
+    .map(assetPath)
+    .filter((path): path is string => Boolean(path));
+  if (paths.length === 0) return modules;
+
+  const { data } = await supabase.storage
+    .from(COURSE_ASSETS_BUCKET)
+    .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+  const urls = new Map((data ?? []).map(item => [item.path, item.signedUrl]));
+  return modules.map(module => ({
+    ...module,
+    lessons: module.lessons.map(lesson => {
+      const path = assetPath(lesson);
+      return {
+        ...lesson,
+        attachedFilePath: path,
+        attachedFileUrl: path ? urls.get(path) ?? undefined : lesson.attachedFileUrl,
+      };
+    }),
+  }));
 }
 
 export interface CourseRow {
@@ -54,7 +90,6 @@ export interface CourseRow {
 
 export type CourseSummaryRow = Omit<CourseRow, 'modules'>;
 
-const COURSE_COLUMNS = 'id,title,description,duration,level,price,category,instructor,modules,thumbnail_url,created_at';
 // Summaries never need the (potentially large) modules JSONB, so they don't select it.
 const COURSE_SUMMARY_COLUMNS = 'id,title,description,duration,level,price,category,instructor,thumbnail_url,created_at';
 
@@ -89,14 +124,12 @@ export async function saveCourse(course: Omit<CourseRow, 'created_at'>): Promise
 export async function fetchCourses(): Promise<{ data: CourseRow[]; error: string | null }> {
   if (!supabase) return { data: [], error: SUPABASE_CONFIG_ERROR };
   const { data, error } = await supabase
-    .from('courses')
-    .select(COURSE_COLUMNS)
-    .order('created_at', { ascending: false });
-  const rows = (data ?? []).map(row => ({
+    .rpc('get_admin_courses');
+  const rows = await Promise.all(((data ?? []) as unknown as CourseRow[]).map(async row => ({
     ...row,
-    modules: readModules(row.modules),
+    modules: await signLessonAssets(readModules(row.modules)),
     thumbnail_url: row.thumbnail_url || legacyThumbnail(row.modules) || '',
-  }));
+  })));
   return { data: rows, error: error?.message ?? null };
 }
 
@@ -116,18 +149,17 @@ export async function fetchCourseSummaries(): Promise<{ data: CourseSummaryRow[]
 export async function fetchCourseById(id: string): Promise<{ data: CourseRow | null; error: string | null }> {
   if (!supabase) return { data: null, error: SUPABASE_CONFIG_ERROR };
   const { data, error } = await supabase
-    .from('courses')
-    .select(COURSE_COLUMNS)
-    .eq('id', id)
+    .rpc('get_course_content', { course_id: id })
     .maybeSingle();
 
   if (!data) return { data: null, error: error?.message ?? null };
+  const row = data as unknown as CourseRow;
 
   return {
     data: {
-      ...data,
-      modules: readModules(data.modules),
-      thumbnail_url: data.thumbnail_url || legacyThumbnail(data.modules) || '',
+      ...row,
+      modules: await signLessonAssets(readModules(row.modules)),
+      thumbnail_url: row.thumbnail_url || legacyThumbnail(row.modules) || '',
     },
     error: error?.message ?? null,
   };
@@ -176,21 +208,37 @@ export async function saveEnrollment(enrollment: Omit<EnrollmentRow, 'id' | 'enr
   return { error: error?.message ?? null };
 }
 
-export async function updateEnrollmentProgress(
-  userId: string,
+export async function markLessonComplete(
   courseId: string,
-  progressPercentage: number,
-  completed: boolean,
-  completedLessons?: string[]
-): Promise<{ error: string | null }> {
-  if (!supabase) return { error: 'Supabase not configured' };
-  const update: Record<string, unknown> = { progress_percentage: progressPercentage, completed };
-  if (completedLessons !== undefined) update.completed_lessons = completedLessons;
-  const { error } = await supabase.from('enrollments')
-    .update(update)
-    .eq('user_id', userId)
-    .eq('course_id', courseId);
-  return { error: error?.message ?? null };
+  lessonId: string
+): Promise<{ data: EnrollmentRow | null; error: string | null }> {
+  if (!supabase) return { data: null, error: 'Supabase not configured' };
+  const { data, error } = await supabase.rpc('mark_lesson_complete', {
+    course_id: courseId,
+    lesson_id: lessonId,
+  });
+  return { data: data ?? null, error: error?.message ?? null };
+}
+
+export interface QuizSubmissionResult {
+  score: number;
+  correctCount: number;
+  questionCount: number;
+  passed: boolean;
+}
+
+export async function submitQuiz(
+  courseId: string,
+  lessonId: string,
+  answers: Record<string, string[]>
+): Promise<{ data: QuizSubmissionResult | null; error: string | null }> {
+  if (!supabase) return { data: null, error: 'Supabase not configured' };
+  const { data, error } = await supabase.rpc('submit_quiz', {
+    course_id: courseId,
+    lesson_id: lessonId,
+    answers,
+  });
+  return { data: data as QuizSubmissionResult | null, error: error?.message ?? null };
 }
 
 export async function fetchUserEnrollment(userId: string, courseId: string): Promise<{ data: EnrollmentRow | null; error: string | null }> {

@@ -149,7 +149,7 @@ export async function fetchCourseSummaries(): Promise<{ data: CourseSummaryRow[]
 export async function fetchCourseById(id: string): Promise<{ data: CourseRow | null; error: string | null }> {
   if (!supabase) return { data: null, error: SUPABASE_CONFIG_ERROR };
   const { data, error } = await supabase
-    .rpc('get_course_content', { course_id: id })
+    .rpc('get_course_content_v2', { p_course_id: id })
     .maybeSingle();
 
   if (!data) return { data: null, error: error?.message ?? null };
@@ -201,10 +201,9 @@ export interface EnrollmentRow {
 
 export async function saveEnrollment(enrollment: Omit<EnrollmentRow, 'id' | 'enrolled_at'>): Promise<{ error: string | null }> {
   if (!supabase) return { error: null };
-  const { error } = await supabase.from('enrollments').upsert(
-    [enrollment],
-    { onConflict: 'user_id,course_id' }
-  );
+  const { error } = await supabase.rpc('ensure_course_enrollment_v2', {
+    p_course_id: enrollment.course_id,
+  });
   return { error: error?.message ?? null };
 }
 
@@ -213,9 +212,9 @@ export async function markLessonComplete(
   lessonId: string
 ): Promise<{ data: EnrollmentRow | null; error: string | null }> {
   if (!supabase) return { data: null, error: 'Supabase not configured' };
-  const { data, error } = await supabase.rpc('mark_lesson_complete', {
-    course_id: courseId,
-    lesson_id: lessonId,
+  const { data, error } = await supabase.rpc('mark_lesson_complete_v2', {
+    p_course_id: courseId,
+    p_lesson_id: lessonId,
   });
   return { data: data ?? null, error: error?.message ?? null };
 }
@@ -233,23 +232,21 @@ export async function submitQuiz(
   answers: Record<string, string[]>
 ): Promise<{ data: QuizSubmissionResult | null; error: string | null }> {
   if (!supabase) return { data: null, error: 'Supabase not configured' };
-  const { data, error } = await supabase.rpc('submit_quiz', {
-    course_id: courseId,
-    lesson_id: lessonId,
-    answers,
+  const { data, error } = await supabase.rpc('submit_quiz_v2', {
+    p_course_id: courseId,
+    p_lesson_id: lessonId,
+    p_answers: answers,
   });
   return { data: data as QuizSubmissionResult | null, error: error?.message ?? null };
 }
 
-export async function fetchUserEnrollment(userId: string, courseId: string): Promise<{ data: EnrollmentRow | null; error: string | null }> {
+export async function fetchUserEnrollment(_userId: string, courseId: string): Promise<{ data: EnrollmentRow | null; error: string | null }> {
   if (!supabase) return { data: null, error: null };
   const { data, error } = await supabase
-    .from('enrollments')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('course_id', courseId)
-    .maybeSingle();
-  return { data: data ?? null, error: error?.message ?? null };
+    .rpc('get_my_enrollment_v2', { p_course_id: courseId });
+  const rows = Array.isArray(data) ? data : data ? [data] : [];
+  const enrollment = rows[0] as EnrollmentRow | undefined;
+  return { data: enrollment?.id ? enrollment : null, error: error?.message ?? null };
 }
 
 export async function fetchUserEnrollments(userId: string): Promise<{ data: EnrollmentRow[]; error: string | null }> {

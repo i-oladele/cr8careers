@@ -2,11 +2,53 @@
 -- Learners may no longer write completion fields directly. All progress is
 -- computed by the database through the narrow RPCs below.
 
+-- Some early deployments created completed_lessons as jsonb. Normalize that
+-- legacy shape before policies/functions use PostgreSQL array operations.
+create or replace function public.completed_lessons_jsonb_to_text_array(value jsonb)
+returns text[]
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(array_agg(item), array[]::text[])
+  from jsonb_array_elements_text(coalesce(value, '[]'::jsonb)) item;
+$$;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'enrollments'
+      and column_name = 'completed_lessons'
+      and udt_name = 'jsonb'
+  ) then
+    execute 'alter table public.enrollments alter column completed_lessons drop default';
+    execute 'alter table public.enrollments alter column completed_lessons type text[] using public.completed_lessons_jsonb_to_text_array(completed_lessons)';
+    execute 'alter table public.enrollments alter column completed_lessons set default array[]::text[]';
+  end if;
+end;
+$$;
+
+drop function public.completed_lessons_jsonb_to_text_array(jsonb);
+
 revoke select on public.courses from anon, authenticated;
 grant select (id, title, description, duration, level, price, category, instructor, thumbnail_url, created_at)
   on public.courses to anon, authenticated;
 
 revoke update on public.enrollments from authenticated;
+grant select, insert on public.enrollments to authenticated;
+
+drop policy if exists "Learners can read their own enrollments" on public.enrollments;
+create policy "Learners can read their own enrollments"
+  on public.enrollments
+  for select
+  to authenticated
+  using (
+    auth.uid() = user_id
+    or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
 
 drop policy if exists "Learners can create their own enrollments" on public.enrollments;
 create policy "Learners can create empty enrollments"

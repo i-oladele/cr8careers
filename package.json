@@ -7,7 +7,7 @@
     "build": "vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src vite.config.ts",
+    "lint": "eslint src scripts vite.config.ts",
     "test": "vitest run"
   },
   "dependencies": {

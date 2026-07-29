@@ -6,12 +6,19 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', fetch: 'readonly', process: 'readonly', URL: 'readonly' },
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       globals: {
         Blob: 'readonly', File: 'readonly', Image: 'readonly', URL: 'readonly',
         crypto: 'readonly', document: 'readonly', window: 'readonly', localStorage: 'readonly',
         console: 'readonly', confirm: 'readonly', setTimeout: 'readonly', clearTimeout: 'readonly',
+        process: 'readonly',
       },
     },
     rules: {

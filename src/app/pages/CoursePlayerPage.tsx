@@ -405,7 +405,7 @@ export default function CoursePlayerPage() {
           if (cancelled) return;
           if (enrollmentError) throw new Error(enrollmentError);
 
-          if (enrollment) {
+          if (enrollment?.id) {
             const completed = new Set<string>(enrollment.completed_lessons ?? []);
             setCompletedLessons(completed);
             if (enrollment.completed) setShowCertificate(true);
@@ -421,6 +421,25 @@ export default function CoursePlayerPage() {
               completed_lessons: [],
             });
             if (saveError) throw new Error(saveError);
+            // The private asset policy becomes effective once enrollment exists.
+            // Refresh so first-time learners receive signed attachment URLs without reloading.
+            const { data: enrolledCourse, error: refreshError } = await fetchCourseById(courseId);
+            if (refreshError) throw new Error(refreshError);
+            if (enrolledCourse && !cancelled) {
+              found = {
+                id: enrolledCourse.id,
+                title: enrolledCourse.title,
+                description: enrolledCourse.description,
+                duration: enrolledCourse.duration,
+                level: enrolledCourse.level,
+                price: enrolledCourse.price,
+                category: enrolledCourse.category,
+                instructor: enrolledCourse.instructor,
+                modules: enrolledCourse.modules ?? [],
+                thumbnailUrl: enrolledCourse.thumbnail_url ?? '',
+              };
+              setCourse(found);
+            }
           }
         } else {
           // Unauthenticated fallback: use localStorage

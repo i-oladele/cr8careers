@@ -1,282 +1,168 @@
 import { Link } from "react-router-dom";
+import { ArrowRight, Check, Eye, Lightbulb, ShieldCheck, Target, Users } from "lucide-react";
 import SiteHeader from "../components/SiteHeader";
-import svgPaths from "../../imports/Home/svg-trfy73921z";
+import SiteFooter from "../components/SiteFooter";
+import teamImage from "../../assets/optimized/happy-business-colleagues.jpg";
 
-import imgHappyBusinessColleaguesEnjoyingTeamSuccess1 from "../../assets/optimized/happy-business-colleagues.jpg";
-import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
+const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#016e71] focus-visible:ring-offset-4";
 
+const values = [
+  { number: "01", title: "Excellence", description: "We bring care, rigour and high standards to every engagement.", color: "text-[#016e71]", tint: "bg-[#e8f5f4]", icon: Check },
+  { number: "02", title: "Integrity", description: "We communicate honestly and act responsibly in every relationship.", color: "text-[#b25700]", tint: "bg-[#fff1e2]", icon: ShieldCheck },
+  { number: "03", title: "Innovation", description: "We keep improving how people and organizations find opportunities to grow.", color: "text-[#c8240e]", tint: "bg-[#fff0ed]", icon: Lightbulb },
+  { number: "04", title: "Partnership", description: "We work alongside our clients and talent to build lasting progress.", color: "text-[#1d1d1d]", tint: "bg-gray-100", icon: Users },
+];
 
-// Footer Component
-function Footer() {
-  return (
-    <footer className="bg-black text-white py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-          <div>
-            <div className="h-16 w-40 mb-4">
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <img alt="CR8Careers Logo" className="h-[287.18%] left-[-11.52%] max-w-none top-[-84.62%] w-[111.52%]" src={imgCr8CareersLogoDarkBg1} />
-              </div>
-            </div>
-            <p className="font-['DM_Sans',sans-serif] font-bold text-lg">
-              repositioning HR<br />repositioning people
-            </p>
-          </div>
-          <div>
-            <h3 className="font-['DM_Sans',sans-serif] font-bold text-[#f58c21] text-2xl mb-6">Follow Us</h3>
-            <div className="space-y-3">
-              <p className="font-['DM_Sans',sans-serif] text-base cursor-pointer hover:text-[#f58c21] transition-colors">Facebook</p>
-              <p className="font-['DM_Sans',sans-serif] text-base cursor-pointer hover:text-[#f58c21] transition-colors">LinkedIn</p>
-              <p className="font-['DM_Sans',sans-serif] text-base cursor-pointer hover:text-[#f58c21] transition-colors">Instagram</p>
-            </div>
-          </div>
-          <div>
-            <h3 className="font-['DM_Sans',sans-serif] font-bold text-[#f58c21] text-2xl mb-6">Stay Updated</h3>
-            <div className="flex gap-2">
-              <input 
-                type="email" 
-                placeholder="Enter your Email" 
-                className="bg-white text-black px-4 py-3 rounded-lg flex-1 max-w-xs"
-              />
-              <button className="bg-[#ed2a10] hover:bg-[#d42610] transition-colors p-3 rounded-lg">
-                <div className="w-6 h-6">
-                  <svg className="w-full h-full" fill="none" viewBox="0 0 24 24">
-                    <path d={svgPaths.p2b7c1080} fill="white" />
-                  </svg>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 pt-8 border-t border-gray-800">
-          <div className="w-6 h-6">
-            <svg className="w-full h-full" fill="none" viewBox="0 0 24 24">
-              <path d={svgPaths.p2344af80} fill="white" />
-            </svg>
-          </div>
-          <p className="font-['DM_Sans',sans-serif] text-lg">Copyright Cr8Careers 2026</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function TeamMemberCard({ name, role, image, description }: { 
-  name: string; 
-  role: string; 
-  image: string; 
-  description: string;
-}) {
-  return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-      <div className="h-48 bg-gray-200 flex items-center justify-center">
-        <img src={image} alt={name} className="h-full w-full object-cover" />
-      </div>
-      <div className="p-6">
-        <h3 className="font-['DM_Sans',sans-serif] font-bold text-xl text-[#1d1d1d] mb-2">{name}</h3>
-        <p className="font-['DM_Sans',sans-serif] text-[#f58c21] font-semibold mb-3">{role}</p>
-        <p className="font-['DM_Sans',sans-serif] text-gray-600 text-sm">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function TimelineItem({ year, title, description }: { year: string; title: string; description: string }) {
-  return (
-    <div className="flex gap-6">
-      <div className="flex flex-col items-center">
-        <div className="w-12 h-12 bg-[#016e71] text-white rounded-full flex items-center justify-center flex-shrink-0">
-          <span className="font-['DM_Sans',sans-serif] font-bold text-sm">{year}</span>
-        </div>
-        <div className="w-0.5 h-full bg-gray-300"></div>
-      </div>
-      <div className="pb-8">
-        <h3 className="font-['DM_Sans',sans-serif] font-bold text-xl text-[#1d1d1d] mb-2">{title}</h3>
-        <p className="font-['DM_Sans',sans-serif] text-gray-600">{description}</p>
-      </div>
-    </div>
-  );
-}
+const milestones = [
+  { year: "2018", title: "Cr8Careers begins", description: "Established with a vision to transform HR services in Nigeria." },
+  { year: "2020", title: "Learning expands", description: "Training and development programmes become part of our wider people offering." },
+  { year: "2022", title: "Assessment evolves", description: "Talent assessment and matching capabilities are introduced to strengthen hiring decisions." },
+  { year: "2024", title: "Impact grows", description: "More than 500 organizations served and 10,000 professionals placed in key roles." },
+  { year: "2026", title: "The journey continues", description: "Continuing to develop practical people solutions with relevance across Africa." },
+];
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <SiteHeader activePage="about" />
-      
-      {/* Hero Section */}
-      <section className="relative pt-32 lg:pt-40 pb-16 lg:pb-24 bg-gradient-to-br from-[#016e71] to-[#f58c21]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="font-['DM_Sans',sans-serif] font-bold text-white text-4xl md:text-5xl lg:text-6xl mb-6">
-                About Cr8Careers
+
+      <main>
+        <section
+          className="relative overflow-hidden bg-[#f9fafb] pb-20 pt-40 md:pt-48 lg:pb-28 lg:pt-56"
+          style={{ backgroundImage: "url('/Hero.svg')", backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundSize: "cover" }}
+        >
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl">
+              <div className="mb-5 inline-flex rounded-full border border-black/40 bg-white/20 px-6 py-2">
+                <p className="font-['DM_Sans',sans-serif] text-sm font-bold uppercase tracking-wider text-black">About Cr8Careers</p>
+              </div>
+              <h1 className="font-['DM_Sans',sans-serif] text-4xl font-bold leading-tight tracking-tight text-[#1d1d1d] sm:text-5xl lg:text-6xl">
+                Repositioning <span className="italic text-[#ed2a10]">HR.</span><br />Repositioning <span className="italic text-[#ed2a10]">people.</span>
               </h1>
-              <p className="font-['DM_Sans',sans-serif] text-white text-xl mb-8">
-                We are a premier HR solutions provider dedicated to transforming organizations through innovative talent management and strategic workforce development.
+              <p className="mt-6 max-w-3xl font-['DM_Sans',sans-serif] text-lg leading-relaxed text-black sm:text-xl">
+                We connect talent, learning and practical HR support to help people and organizations move from potential to progress.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/contact" className="bg-white text-[#016e71] px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors">
-                  <p className="font-['DM_Sans',sans-serif] font-bold">Get in Touch</p>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Link to="/services" className={`rounded-lg bg-[#016e71] px-7 py-3 text-center font-['DM_Sans',sans-serif] text-lg font-bold text-white hover:bg-[#015a5d] ${focusRing}`}>
+                  Explore our services
                 </Link>
-                <Link to="/services" className="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-[#016e71] transition-colors">
-                  <p className="font-['DM_Sans',sans-serif] font-bold">Our Services</p>
+                <Link to="/contact" className={`rounded-lg border border-black px-7 py-3 text-center font-['DM_Sans',sans-serif] text-lg font-bold text-[#1d1d1d] hover:bg-gray-50 ${focusRing}`}>
+                  Talk to our team
                 </Link>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="py-20 lg:py-28" aria-labelledby="story-heading">
+          <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
+            <div className="overflow-hidden rounded-xl bg-gray-100">
+              <img src={teamImage} alt="Colleagues collaborating at work" className="h-full min-h-80 w-full object-cover" loading="lazy" decoding="async" />
+            </div>
+            <div>
+              <p className="font-['DM_Sans',sans-serif] text-sm font-bold uppercase tracking-widest text-[#ed2a10]">Our story</p>
+              <h2 id="story-heading" className="mt-3 font-['DM_Sans',sans-serif] text-4xl font-bold tracking-tight text-[#1d1d1d] md:text-5xl">
+                Bridging the gap between vision and execution
+              </h2>
+              <p className="mt-6 font-['DM_Sans',sans-serif] text-lg leading-relaxed text-gray-700">
+                Cr8Careers was created around a simple belief: organizations perform better when the right people, skills and systems come together. We support that connection through recruitment, outsourcing, training and HR advisory services.
+              </p>
+              <p className="mt-4 font-['DM_Sans',sans-serif] text-lg leading-relaxed text-gray-700">
+                Our work is shaped by the realities of the organizations and professionals we serve, with solutions designed to be practical, relevant and sustainable.
+              </p>
+              <Link to="/services" className={`mt-7 inline-flex items-center gap-2 rounded-md font-['DM_Sans',sans-serif] text-lg font-bold text-[#016e71] hover:opacity-75 ${focusRing}`}>
+                See how we can help <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#fffaf5] py-20 lg:py-28" aria-labelledby="direction-heading">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto mb-12 max-w-3xl text-center">
+              <p className="font-['DM_Sans',sans-serif] text-sm font-bold uppercase tracking-widest text-[#ed2a10]">What guides us</p>
+              <h2 id="direction-heading" className="mt-3 font-['DM_Sans',sans-serif] text-4xl font-bold tracking-tight text-[#1d1d1d] md:text-5xl">Our mission and vision</h2>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2">
+              <article className="relative overflow-hidden rounded-xl border border-[#d7d7d7] bg-white p-8 lg:p-10">
+                <span className="absolute right-5 top-1 font-['DM_Sans',sans-serif] text-8xl font-bold text-[#eeeeee]" aria-hidden="true">01</span>
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-[#016e71] text-white"><Target aria-hidden="true" /></div>
+                <h3 className="relative mt-6 font-['DM_Sans',sans-serif] text-3xl font-bold text-[#016e71]">Our Mission</h3>
+                <p className="relative mt-4 font-['DM_Sans',sans-serif] text-lg leading-relaxed text-gray-700">
+                  To bridge the gap between vision and execution by connecting top-tier talent with world-class organizations through innovative recruitment, training and HR solutions that drive sustainable growth.
+                </p>
+              </article>
+              <article className="relative overflow-hidden rounded-xl border border-[#d7d7d7] bg-white p-8 lg:p-10">
+                <span className="absolute right-5 top-1 font-['DM_Sans',sans-serif] text-8xl font-bold text-[#eeeeee]" aria-hidden="true">02</span>
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-[#f58c21] text-black"><Eye aria-hidden="true" /></div>
+                <h3 className="relative mt-6 font-['DM_Sans',sans-serif] text-3xl font-bold text-[#b25700]">Our Vision</h3>
+                <p className="relative mt-4 font-['DM_Sans',sans-serif] text-lg leading-relaxed text-gray-700">
+                  To be a leading HR partner in Africa, recognized for talent development, organizational transformation and workforce solutions that empower businesses to thrive.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 lg:py-28" aria-labelledby="values-heading">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto mb-12 max-w-3xl text-center">
+              <p className="font-['DM_Sans',sans-serif] text-sm font-bold uppercase tracking-widest text-[#ed2a10]">How we show up</p>
+              <h2 id="values-heading" className="mt-3 font-['DM_Sans',sans-serif] text-4xl font-bold tracking-tight text-[#1d1d1d] md:text-5xl">Our core values</h2>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {values.map(value => {
+                const Icon = value.icon;
+                return (
+                  <article key={value.title} className="relative overflow-hidden rounded-xl border border-[#d7d7d7] bg-white p-6 transition-shadow hover:shadow-lg">
+                    <span className="absolute right-3 top-0 font-['DM_Sans',sans-serif] text-6xl font-bold text-[#eeeeee]" aria-hidden="true">{value.number}</span>
+                    <div className={`relative flex h-11 w-11 items-center justify-center rounded-lg ${value.tint} ${value.color}`}><Icon className="h-5 w-5" aria-hidden="true" /></div>
+                    <h3 className={`relative mt-5 font-['DM_Sans',sans-serif] text-2xl font-bold ${value.color}`}>{value.title}</h3>
+                    <p className="relative mt-3 font-['DM_Sans',sans-serif] leading-relaxed text-gray-700">{value.description}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#f8f8f8] py-20 lg:py-28" aria-labelledby="journey-heading">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr]">
+              <div>
+                <p className="font-['DM_Sans',sans-serif] text-sm font-bold uppercase tracking-widest text-[#ed2a10]">Our journey</p>
+                <h2 id="journey-heading" className="mt-3 font-['DM_Sans',sans-serif] text-4xl font-bold tracking-tight text-[#1d1d1d] md:text-5xl">Growing with the people we serve</h2>
+                <p className="mt-5 font-['DM_Sans',sans-serif] text-lg leading-relaxed text-gray-600">A timeline of how our people solutions have developed and expanded.</p>
+              </div>
+              <ol className="border-l-2 border-[#bdd9d9] pl-7">
+                {milestones.map((milestone, index) => (
+                  <li key={milestone.year} className={`relative ${index < milestones.length - 1 ? "pb-9" : ""}`}>
+                    <span className="absolute -left-[2.15rem] top-1 h-3 w-3 rounded-full bg-[#016e71] ring-4 ring-[#f8f8f8]" aria-hidden="true" />
+                    <p className="font-['DM_Sans',sans-serif] text-sm font-bold text-[#ed2a10]">{milestone.year}</p>
+                    <h3 className="mt-1 font-['DM_Sans',sans-serif] text-xl font-bold text-[#1d1d1d]">{milestone.title}</h3>
+                    <p className="mt-2 font-['DM_Sans',sans-serif] leading-relaxed text-gray-600">{milestone.description}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 lg:py-20" aria-labelledby="about-cta-heading">
+          <div className="relative mx-4 grid max-w-7xl gap-8 overflow-hidden rounded-2xl bg-[#016e71] px-6 py-12 text-white sm:mx-6 sm:px-10 md:grid-cols-[1fr_auto] md:items-center lg:mx-auto lg:px-12">
+            <img src="/Hero.svg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-20" aria-hidden="true" />
             <div className="relative">
-              <img 
-                alt="Our team" 
-                className="w-full h-auto rounded-2xl object-cover shadow-2xl" 
-                loading="lazy"
-                decoding="async"
-                src={imgHappyBusinessColleaguesEnjoyingTeamSuccess1} 
-              />
+              <h2 id="about-cta-heading" className="font-['DM_Sans',sans-serif] text-3xl font-bold md:text-4xl">Let’s build what comes next</h2>
+              <p className="mt-3 max-w-2xl font-['DM_Sans',sans-serif] text-lg text-white/85">Tell us about the people challenge or opportunity in front of your organization.</p>
             </div>
+            <Link to="/contact" className={`relative inline-flex items-center justify-center gap-2 rounded-lg border border-[#fff9f4] px-7 py-3.5 font-['DM_Sans',sans-serif] font-bold text-white hover:bg-[#fff9f4] hover:text-[#016e71] ${focusRing}`}>
+              Start a conversation <ArrowRight className="h-5 w-5" aria-hidden="true" />
+            </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Mission & Vision */}
-      <section className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="text-center md:text-left">
-              <div className="w-16 h-16 bg-[#016e71] text-white rounded-full flex items-center justify-center mx-auto md:mx-0 mb-6">
-                <span className="text-2xl">🎯</span>
-              </div>
-              <h2 className="font-['DM_Sans',sans-serif] font-bold text-3xl text-[#1d1d1d] mb-4">Our Mission</h2>
-              <p className="font-['DM_Sans',sans-serif] text-gray-600 leading-relaxed">
-                To bridge the gap between vision and execution by connecting top-tier talent with world-class organizations through innovative recruitment, training, and HR solutions that drive sustainable growth.
-              </p>
-            </div>
-            <div className="text-center md:text-left">
-              <div className="w-16 h-16 bg-[#f58c21] text-white rounded-full flex items-center justify-center mx-auto md:mx-0 mb-6">
-                <span className="text-2xl">👁️</span>
-              </div>
-              <h2 className="font-['DM_Sans',sans-serif] font-bold text-3xl text-[#1d1d1d] mb-4">Our Vision</h2>
-              <p className="font-['DM_Sans',sans-serif] text-gray-600 leading-relaxed">
-                To be the leading HR partner in Africa, recognized for our excellence in talent development, organizational transformation, and innovative workforce solutions that empower businesses to thrive in the global marketplace.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Values */}
-      <section className="py-16 lg:py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-['DM_Sans',sans-serif] font-bold text-[#1d1d1d] text-3xl md:text-4xl mb-4">
-              Our Core Values
-            </h2>
-            <p className="font-['DM_Sans',sans-serif] text-gray-600 text-lg max-w-2xl mx-auto">
-              The principles that guide everything we do
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { title: "Excellence", description: "We deliver exceptional quality in every service we provide", color: "bg-[#016e71]" },
-              { title: "Integrity", description: "We operate with transparency and honesty in all our dealings", color: "bg-[#f58c21]" },
-              { title: "Innovation", description: "We embrace creative solutions and forward-thinking approaches", color: "bg-[#ed2a10]" },
-              { title: "Partnership", description: "We build lasting relationships based on trust and mutual success", color: "bg-[#1d1d1d]" }
-            ].map((value, index) => (
-              <div key={index} className="text-center">
-                <div className={`w-20 h-20 ${value.color} text-white rounded-full flex items-center justify-center mx-auto mb-4`}>
-                  <span className="text-3xl">{value.title[0]}</span>
-                </div>
-                <h3 className="font-['DM_Sans',sans-serif] font-bold text-xl mb-2">{value.title}</h3>
-                <p className="font-['DM_Sans',sans-serif] text-gray-600 text-sm">{value.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Timeline */}
-      <section className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-['DM_Sans',sans-serif] font-bold text-[#1d1d1d] text-3xl md:text-4xl mb-4">
-              Our Journey
-            </h2>
-            <p className="font-['DM_Sans',sans-serif] text-gray-600 text-lg max-w-2xl mx-auto">
-              Key milestones in our growth story
-            </p>
-          </div>
-          
-          <div className="max-w-3xl mx-auto">
-            <TimelineItem
-              year="2018"
-              title="Founded"
-              description="Cr8Careers was established with a vision to transform HR services in Nigeria"
-            />
-            <TimelineItem
-              year="2020"
-              title="Expansion"
-              description="Expanded our services to include comprehensive training and development programs"
-            />
-            <TimelineItem
-              year="2022"
-              title="Innovation"
-              description="Launched our proprietary talent assessment and matching platform"
-            />
-            <TimelineItem
-              year="2024"
-              title="Growth"
-              description="Served over 500 companies and placed 10,000+ professionals in key roles"
-            />
-            <TimelineItem
-              year="2026"
-              title="Future"
-              description="Continuing to innovate and expand our impact across Africa"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Team */}
-      <section className="py-16 lg:py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-['DM_Sans',sans-serif] font-bold text-[#1d1d1d] text-3xl md:text-4xl mb-4">
-              Meet Our Team
-            </h2>
-            <p className="font-['DM_Sans',sans-serif] text-gray-600 text-lg max-w-2xl mx-auto">
-              The passionate professionals behind our success
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <TeamMemberCard
-              name="Sarah Johnson"
-              role="CEO & Founder"
-              image=""
-              description="Visionary leader with 15+ years in HR and talent management"
-            />
-            <TeamMemberCard
-              name="Michael Chen"
-              role="Head of Operations"
-              image=""
-              description="Expert in process optimization and service delivery excellence"
-            />
-            <TeamMemberCard
-              name="Amara Okafor"
-              role="Director of Training"
-              image=""
-              description="Specialized in learning & development and organizational psychology"
-            />
-            <TeamMemberCard
-              name="David Williams"
-              role="Client Relations Lead"
-              image=""
-              description="Dedicated to building lasting partnerships with our clients"
-            />
-          </div>
-        </div>
-      </section>
-
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

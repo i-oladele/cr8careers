@@ -7,6 +7,7 @@ export function Sidebar({ activeSection, setActiveSection }: {
   const menuItems = [
     { id: 'courses', label: 'Courses', icon: '/Books.svg' },
     { id: 'jobs', label: 'Job Openings', icon: '/ReadCvLogo.svg' },
+    { id: 'blog', label: 'Blog Posts', icon: '✍️' },
     { id: 'learners', label: 'Learners', icon: '👥' },
     { id: 'contact', label: 'Contact', icon: '@' },
   ];

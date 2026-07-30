@@ -32,6 +32,9 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [draggingLessonId, setDraggingLessonId] = useState<string | null>(null);
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
+  // A course can contain dozens of rich-text editors. Keep content modules
+  // collapsed until requested so entering this step does not mount them all.
+  const [expandedContentModules, setExpandedContentModules] = useState<Set<string>>(new Set());
   const dragLesson = useRef<{ moduleId: string; lessonId: string } | null>(null);
 
   const totalSteps = 3;
@@ -65,6 +68,7 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
     };
     setModules([...modules, newModule]);
     setSelectedModule(newModule);
+    setExpandedContentModules(previous => new Set(previous).add(newModule.id));
   };
 
   const addLesson = (mod?: Module) => {
@@ -550,18 +554,44 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {modules.map((module, index) => (
+                  {modules.map((module, index) => {
+                    const isExpanded = expandedContentModules.has(module.id);
+                    return (
                     <div key={module.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-['DM_Sans',sans-serif] font-medium text-gray-900">
-                          Module {index + 1}
-                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedContentModules(previous => {
+                            const next = new Set(previous);
+                            if (next.has(module.id)) next.delete(module.id);
+                            else next.add(module.id);
+                            return next;
+                          })}
+                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                          aria-expanded={isExpanded}
+                        >
+                          <ChevronDown
+                            size={18}
+                            className={`shrink-0 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                          <span className="truncate font-['DM_Sans',sans-serif] font-medium text-gray-900">
+                            Module {index + 1}{module.title ? `: ${module.title}` : ''}
+                          </span>
+                          <span className="shrink-0 text-xs text-gray-500">
+                            {module.lessons.length} {module.lessons.length === 1 ? 'item' : 'items'}
+                          </span>
+                        </button>
                         <button
                           onClick={() => {
                             setModules(modules.filter(m => m.id !== module.id));
+                            setExpandedContentModules(previous => {
+                              const next = new Set(previous);
+                              next.delete(module.id);
+                              return next;
+                            });
                             if (selectedModule?.id === module.id) setSelectedModule(null);
                           }}
-                          className="text-red-500 hover:text-red-700 transition-colors p-1"
+                          className="ml-3 text-red-500 hover:text-red-700 transition-colors p-1"
                           title="Delete module"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -569,6 +599,8 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
                           </svg>
                         </button>
                       </div>
+                      {isExpanded && (
+                      <div>
                       <input
                         type="text"
                         value={module.title}
@@ -838,8 +870,11 @@ export function CourseCreationWizard({ onClose, onSave, editingCourse }: {
                           </div>
                         </div>
                       )}
+                      </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <button
                     onClick={addModule}
                     className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-600 hover:border-[#ed2a10] hover:text-[#ed2a10] transition-colors font-['DM_Sans',sans-serif] font-medium"

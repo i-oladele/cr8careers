@@ -1,65 +1,7 @@
 import SiteHeader from "../components/SiteHeader";
+import SiteFooter from "../components/SiteFooter";
 import { Link } from "react-router-dom";
-import svgPaths from "../../imports/Home/svg-trfy73921z";
 
-// Raster images using figma:asset scheme
-import imgCr8CareersLogoDarkBg1 from "figma:asset/78c12288adf22ec492cc6d1dd1419b64d5c0cf33.png";
-
-
-// Footer Component
-function Footer() {
-  return (
-    <footer className="bg-black text-white py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-          <div>
-            <div className="h-16 w-40 mb-4">
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <img alt="CR8Careers Logo" className="h-[287.18%] left-[-11.52%] max-w-none top-[-84.62%] w-[111.52%]" src={imgCr8CareersLogoDarkBg1} />
-              </div>
-            </div>
-            <p className="font-['DM_Sans',sans-serif] font-bold text-lg">
-              repositioning HR<br />repositioning people
-            </p>
-          </div>
-          <div>
-            <h3 className="font-['DM_Sans',sans-serif] font-bold text-[#f58c21] text-2xl mb-6">Follow Us</h3>
-            <div className="space-y-3">
-              <p className="font-['DM_Sans',sans-serif] text-base cursor-pointer hover:text-[#f58c21] transition-colors">Facebook</p>
-              <p className="font-['DM_Sans',sans-serif] text-base cursor-pointer hover:text-[#f58c21] transition-colors">LinkedIn</p>
-              <p className="font-['DM_Sans',sans-serif] text-base cursor-pointer hover:text-[#f58c21] transition-colors">Instagram</p>
-            </div>
-          </div>
-          <div>
-            <h3 className="font-['DM_Sans',sans-serif] font-bold text-[#f58c21] text-2xl mb-6">Stay Updated</h3>
-            <div className="flex gap-2">
-              <input 
-                type="email" 
-                placeholder="Enter your Email" 
-                className="bg-white text-black px-4 py-3 rounded-lg flex-1 max-w-xs"
-              />
-              <button className="bg-[#ed2a10] hover:bg-[#d42610] transition-colors p-3 rounded-lg">
-                <div className="w-6 h-6">
-                  <svg className="w-full h-full" fill="none" viewBox="0 0 24 24">
-                    <path d={svgPaths.p2b7c1080} fill="white" />
-                  </svg>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 pt-8 border-t border-gray-800">
-          <div className="w-6 h-6">
-            <svg className="w-full h-full" fill="none" viewBox="0 0 24 24">
-              <path d={svgPaths.p2344af80} fill="white" />
-            </svg>
-          </div>
-          <p className="font-['DM_Sans',sans-serif] text-lg">Copyright Cr8Careers 2026</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
 
 function TrainingCard({ title, description, duration, level, icon }: { 
   title: string; 
@@ -92,7 +34,7 @@ export default function TrainingPage() {
       <SiteHeader />
       
       {/* Hero Section */}
-      <section className="relative pt-32 lg:pt-40 pb-16 lg:pb-24 bg-gradient-to-br from-[#ed2a10] to-[#d42610]">
+      <section className="relative pt-36 lg:pt-40 pb-16 lg:pb-24 bg-gradient-to-br from-[#ed2a10] to-[#d42610]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="font-['DM_Sans',sans-serif] font-bold text-white text-4xl md:text-5xl lg:text-6xl mb-6">
@@ -306,7 +248,7 @@ export default function TrainingPage() {
         </div>
       </section>
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

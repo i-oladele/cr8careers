@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -7,6 +7,7 @@ const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const InsightCentrePage = lazy(() => import("./pages/InsightCentrePage"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const CoursesPage = lazy(() => import("./pages/CoursesPage"));
 const CoursePlayerPage = lazy(() => import("./pages/CoursePlayerPage"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
@@ -31,10 +32,19 @@ function PageFallback() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop />
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -42,6 +52,7 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/insight-centre" element={<InsightCentrePage />} />
+            <Route path="/insight-centre/:slug" element={<BlogPostPage />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/course/:courseId" element={<CoursePlayerPage />} />
             <Route path="/dashboard" element={<StudentDashboard />} />

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useRef } from 'react';
+import { Component, lazy, Suspense, useState, useEffect, useRef, type ErrorInfo, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Course } from '../data/courseContent';
 import { saveCourse, updateCourse, fetchCourses, deleteCourse, CourseRow } from '../../lib/courseService';
@@ -8,10 +8,45 @@ import { Sidebar } from './admin/Sidebar';
 const LearnersSection = lazy(() => import('./admin/LearnersSection').then(module => ({ default: module.LearnersSection })));
 const ContactSubmissionsSection = lazy(() => import('./admin/ContactSubmissionsSection').then(module => ({ default: module.ContactSubmissionsSection })));
 const JobOpenings = lazy(() => import('./admin/JobsSection').then(module => ({ default: module.JobOpenings })));
+const BlogPostsSection = lazy(() => import('./admin/BlogPostsSection'));
 const CourseCreationWizard = lazy(() => import('./admin/CourseCreationWizard').then(module => ({ default: module.CourseCreationWizard })));
 
 function AdminSectionFallback() {
   return <div className="p-8 text-sm text-gray-500">Loading section...</div>;
+}
+
+class AdminSectionErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Admin section failed to render', error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-6 text-red-900">
+          <h2 className="font-semibold">This admin section could not be displayed</h2>
+          <p className="mt-2 text-sm">Your changes have not been saved. Reload this page and try again.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+          >
+            Reload admin
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // Main Admin Dashboard Component
@@ -435,6 +470,7 @@ export default function AdminDashboard() {
           )}
 
           {/* Course Creation Screen */}
+          <AdminSectionErrorBoundary key={`${activeSection}-${showCourseWizard ? 'wizard' : 'list'}`}>
           <Suspense fallback={<AdminSectionFallback />}>
           {activeSection === 'courses' && showCourseWizard && (
             <div className="p-6">
@@ -458,6 +494,7 @@ export default function AdminDashboard() {
           )}
 
           {activeSection === 'jobs' && <JobOpenings />}
+          {activeSection === 'blog' && <BlogPostsSection />}
           {activeSection === 'learners' && <LearnersSection />}
           {activeSection === 'contact' && (
             <div className="p-6">
@@ -465,6 +502,7 @@ export default function AdminDashboard() {
             </div>
           )}
           </Suspense>
+          </AdminSectionErrorBoundary>
         </main>
       </div>
     </div>
